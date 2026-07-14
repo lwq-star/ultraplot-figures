@@ -131,7 +131,7 @@ python scripts/update_skill.py --self-test
 
 ## 示例
 
-- [2025 年全球 M5+ 地震 skill 对照案例](examples/earthquake-skill-comparison/)：
+- [2025 年全球 M5+ 地震 skill 对照案例](examples/earthquake-skill-comparison/README_zh.md)：
   在相同数据和相同提示词下，分别允许和不允许使用 `$ultraplot-figures`
   生成图件。案例包含输入数据、可编辑脚本、PDF 和 TIFF、预览图及文件信息。
 

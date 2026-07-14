@@ -134,7 +134,7 @@ If you do not know what to plot, say: “Please inspect the data first, suggest 
 
 ## Examples
 
-- [2025 global M5+ earthquake skill comparison](examples/earthquake-skill-comparison/):
+- [2025 global M5+ earthquake skill comparison](examples/earthquake-skill-comparison/README.md):
   uses the same data and prompt with and without `$ultraplot-figures`. It includes
   the input data, editable scripts, PDF and TIFF
   outputs, preview images, and file information.
