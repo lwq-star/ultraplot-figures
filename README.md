@@ -32,7 +32,7 @@ General AI can quickly produce plotting code, but a script that runs is not nece
 - selects a suitable figure from the data structure, scientific question, and intended reader, offering several clear options when the goal is uncertain;
 - produces runnable Python code from input data to final figure, separating heavy preprocessing from plotting when needed;
 - handles common scientific-figure needs such as multi-panel layouts, journal sizing, accessible color, legends, maps, rasters, Taylor diagrams, and omics figures;
-- keeps the script, temporary checks, and final deliverables separate, then checks the result against the request before author review.
+- keeps internal contracts, QA helpers, temporary checks, and final deliverables separate so the delivered script stays standalone, then checks the result against the request before author review.
 
 The project will be maintained while AI models still need extra guidance to produce reproducible scientific figures reliably, with updates following UltraPlot and journal requirements. It can be simplified when these capabilities become reliable model defaults.
 
@@ -138,6 +138,10 @@ If you do not know what to plot, say: “Please inspect the data first, suggest 
   uses the same data and prompt with and without `$ultraplot-figures`. It includes
   the input data, editable scripts, PDF and TIFF
   outputs, preview images, and file information.
+- [Observed-versus-predicted model comparison](examples/correlation-scatter-plot/README.md):
+  compares LR, SVR, GBRT, and DNN across four land types using the same Excel data
+  and prompt. It includes the input data, editable scripts, PDF and TIFF outputs,
+  preview images, and file information.
 
 ## How it works
 
@@ -146,6 +150,9 @@ If you do not know what to plot, say: “Please inspect the data first, suggest 
 3. If the figure is not yet clear, it looks at the data and suggests 1–3 suitable options. It asks a question only when the choice would change the meaning of the figure.
 4. Large cleaning, merging, modeling, or reprojection work is kept separate from the plotting script.
 5. Codex makes a draft, checks the content and layout, writes the final files, and checks those files again.
+
+Internal task contracts and Skill QA calls remain in temporary validation code; they
+are not included in the delivered plotting script.
 
 Journal, map, statistical, and multi-panel tasks receive the extra checks they need. The skill does not add panels or scientific claims that you did not request and the data do not support.
 
@@ -170,7 +177,8 @@ Before handing over a figure, the skill checks:
 1. whether every requested reader judgment has suitable evidence and the correct records, filters, panels, variables, units, and labels were used;
 2. whether text, legends, color bars, and plotted data are readable and do not overlap or get cut off;
 3. whether the exported file has the requested format, size, resolution, transparency, and other file settings; PDF/SVG font resources can be inspected, while raster text is checked visually;
-4. whether the final figure is understandable at the size at which it will be used.
+4. whether the delivered Python plotting script is standalone and free of internal contracts, evidence registries, and Skill QA calls;
+5. whether the final figure is understandable at the size at which it will be used.
 
 ## Default font settings
 

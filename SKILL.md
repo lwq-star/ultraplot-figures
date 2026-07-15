@@ -63,7 +63,8 @@ Apply requirements in this order:
 
 ## Task contract
 
-Before coding, define one compact `EXPECTED_CONTRACT` containing:
+Before coding, define one compact `EXPECTED_CONTRACT` in a temporary QA harness or
+transient working state, never in the delivered plotting script. It contains:
 
 - figure purpose and the judgment the reader should be able to make;
 - `contract_version=2`, atomic requested judgments, and verbatim request spans;
@@ -81,10 +82,15 @@ values occur, but does not by itself establish a marginal distribution, concentr
 range, or group composition. State the reason for every supporting panel or for a
 request-specific decision to use lower-precision evidence alone.
 
-Keep the verbatim `REQUEST_TEXT` in the temporary QA harness, not in the delivered
-plotting script. The plotting module may expose the normalized `EXPECTED_CONTRACT` and
-live evidence for the harness to import. Reuse that single contract; do not reconstruct
-a second expected contract or populate actual evidence by copying expected values.
+Keep `REQUEST_TEXT`, `EXPECTED_CONTRACT`, evidence registries, QA-only bindings, Skill
+helper imports and calls, and QA reports in the temporary harness. The delivered
+plotting script contains only standalone data preparation, plotting, export, and
+ordinary reusable return values. It may return figures, axes, artists, processed data,
+and descriptive statistics when useful to normal callers, but must not expose objects
+solely for QA or use names such as `encoding_evidence`, `filter_evidence`, or
+`qa_report`. Build live QA evidence in the harness from the ordinary returned objects
+and actual data. Reuse one expected contract; do not reconstruct a second contract or
+populate actual evidence by copying expected values.
 
 ## Core workflow
 
@@ -103,8 +109,10 @@ a second expected contract or populate actual evidence by copying expected value
    ```
 
 7. Build the minimal complete figure with every requested artist and guide. Keep the
-   delivered plotting script runnable without the installed Skill.
-8. **Draft stage:** run `audit_draft_figure(...)`, save a temporary 150-200 dpi preview
+   delivered plotting script runnable without the installed Skill and free of QA
+   scaffolding.
+8. **Draft stage:** from a temporary harness, bind ordinary plotting return values to
+   live evidence, run `audit_draft_figure(...)`, save a temporary 150-200 dpi preview
    through `qa_workspace()`, and fix semantic/render defects before production export.
 9. **Final stage:** save only the resolved formats, pass the expected post-draw width,
    then run `audit_submission_figure(...)` on the real files.
@@ -146,7 +154,11 @@ continue open-ended warning elimination.
 - **Static scope.** Do not add an interactive or browser companion unless requested.
 - **Deliverables versus QA.** Keep requested scripts, figures, data products, and
   reports separate from temporary previews, logs, probes, caches, `__pycache__/`, and
-  `.pyc` files. Use `qa_workspace()` or the system temporary directory for QA files.
+  `.pyc` files. The temporary harness source is also a QA artifact. Use
+  `qa_workspace()` or the system temporary directory for QA files, and persist none of
+  them unless the user explicitly requests a QA report. The QA facade AST-checks every
+  existing Python deliverable and fails when it contains a task contract, evidence
+  registry, or Skill QA helper import or call.
 - **Environment.** For headless scripts, run `import matplotlib; matplotlib.use("Agg")`
   before `import ultraplot as uplt`.
 - **Scoped rc.** Import UltraPlot before target-specific overrides. Keep font and
@@ -216,7 +228,7 @@ inspecting source.
 ## Bundled scripts
 
 - `scripts/figure_qa.py`: draft/final facade, compact reports, temporary QA workspace,
-  deliverable separation, and resolved PDF/TIFF fallback artifact policy.
+  deliverable and QA-code separation, and resolved PDF/TIFF fallback artifact policy.
 - `scripts/render_qa.py`: in-memory size, legend geometry, semantic size, shared-color
   consistency, and continuous-color quantile diagnostics.
 - `scripts/semantic_qa.py`: contract plus live axes, artists, values, filters, and outputs.

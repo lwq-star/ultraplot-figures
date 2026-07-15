@@ -10,11 +10,13 @@ interface while delivered plotting scripts remain independent of this skill.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import math
 import os
 import sys
 import tempfile
+import tokenize
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
@@ -46,6 +48,100 @@ def _is_within(path: Path, root: Path) -> bool:
     return True
 
 
+_QA_ONLY_DELIVERY_NAMES = {
+    "encoding_evidence",
+    "expected_contract",
+    "filter_evidence",
+    "layout_override_reasons",
+    "qa_artifacts",
+    "qa_report",
+    "request_text",
+}
+_SKILL_QA_MODULES = {"check_figure", "figure_qa", "render_qa", "semantic_qa"}
+_SKILL_QA_CALLS = {
+    "audit_draft_figure",
+    "audit_figure",
+    "audit_figure_contract",
+    "audit_files",
+    "audit_submission_figure",
+    "audit_task_contract",
+    "publication_fallback_policy",
+    "qa_workspace",
+    "require_ok",
+    "save_draft_preview",
+}
+
+
+def audit_delivery_script(path: str | Path) -> dict[str, Any]:
+    """Reject Skill QA scaffolding embedded in a delivered plotting script."""
+    script_path = _resolved(path)
+    errors: list[str] = []
+    forbidden_names: set[str] = set()
+    forbidden_imports: set[str] = set()
+    forbidden_calls: set[str] = set()
+    try:
+        with tokenize.open(script_path) as stream:
+            tree = ast.parse(stream.read(), filename=str(script_path))
+    except (OSError, SyntaxError, UnicodeError) as exc:
+        errors.append(f"could not parse delivered Python script: {exc}")
+    else:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                if node.id.casefold() in _QA_ONLY_DELIVERY_NAMES:
+                    forbidden_names.add(node.id)
+            elif isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Store):
+                if node.attr.casefold() in _QA_ONLY_DELIVERY_NAMES:
+                    forbidden_names.add(node.attr)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    module = alias.name.rsplit(".", 1)[-1]
+                    if module in _SKILL_QA_MODULES:
+                        forbidden_imports.add(alias.name)
+                    binding = alias.asname or alias.name.split(".", 1)[0]
+                    if binding.casefold() in _QA_ONLY_DELIVERY_NAMES:
+                        forbidden_names.add(binding)
+            elif isinstance(node, ast.ImportFrom):
+                module = (node.module or "").rsplit(".", 1)[-1]
+                if module in _SKILL_QA_MODULES:
+                    forbidden_imports.add(node.module or module)
+                for alias in node.names:
+                    binding = alias.asname or alias.name
+                    if binding.casefold() in _QA_ONLY_DELIVERY_NAMES:
+                        forbidden_names.add(binding)
+            elif isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name):
+                    function = node.func.id
+                elif isinstance(node.func, ast.Attribute):
+                    function = node.func.attr
+                else:
+                    continue
+                if function in _SKILL_QA_CALLS:
+                    forbidden_calls.add(function)
+
+        if forbidden_names:
+            errors.append(
+                "QA-only names are present: " + ", ".join(sorted(forbidden_names))
+            )
+        if forbidden_imports:
+            errors.append(
+                "Skill QA modules are imported: "
+                + ", ".join(sorted(forbidden_imports))
+            )
+        if forbidden_calls:
+            errors.append(
+                "Skill QA functions are called: " + ", ".join(sorted(forbidden_calls))
+            )
+
+    return {
+        "path": str(script_path),
+        "forbidden_names": sorted(forbidden_names),
+        "forbidden_imports": sorted(forbidden_imports),
+        "forbidden_calls": sorted(forbidden_calls),
+        "errors": errors,
+        "ok": not errors,
+    }
+
+
 @contextmanager
 def qa_workspace(
     *,
@@ -71,7 +167,7 @@ def audit_output_separation(
     delivery_dir: str | Path | None = None,
     qa_root: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Verify that persistent deliverables and temporary QA files do not overlap."""
+    """Verify output separation and keep Skill QA out of delivered scripts."""
     errors: list[str] = []
     normalized_deliverables: dict[str, str] = {}
     deliverable_paths: set[Path] = set()
@@ -96,11 +192,21 @@ def audit_output_separation(
         if temporary_root is not None and not _is_within(path, temporary_root):
             errors.append(f"QA artifact is outside the declared QA root: {path}")
 
+    script_reports = []
+    for path_text in normalized_deliverables.values():
+        path = Path(path_text)
+        if path.suffix.lower() != ".py" or not path.is_file():
+            continue
+        report = audit_delivery_script(path)
+        script_reports.append(report)
+        errors.extend(f"{path}: {item}" for item in report["errors"])
+
     return {
         "deliverables": normalized_deliverables,
         "qa_artifacts": [str(path) for path in normalized_qa],
         "delivery_dir": str(delivery_root) if delivery_root is not None else None,
         "qa_root": str(temporary_root) if temporary_root is not None else None,
+        "delivery_script_checks": script_reports,
         "errors": errors,
         "ok": not errors,
     }
@@ -452,11 +558,9 @@ def require_ok(report: Mapping[str, Any]) -> None:
 
 
 EXAMPLE = """\
-from io import BytesIO
-
-import ultraplot as uplt
-from PIL import Image
-
+# Temporary QA harness only. Do not put this code in the delivered plotting script.
+# Replace `delivered_plot` with the standalone plotting module for the task.
+from delivered_plot import build_figure, save_final_outputs
 from figure_qa import (
     audit_draft_figure,
     audit_submission_figure,
@@ -467,29 +571,20 @@ from figure_qa import (
 )
 
 
-def save_final_outputs(fig):
-    with uplt.rc.context({"pdf.fonttype": 42, "ps.fonttype": 42}):
-        fig.savefig(pdf_path, format="pdf", facecolor="white", transparent=False)
-    with BytesIO() as buffer:
-        fig.savefig(
-            buffer,
-            format="png",
-            dpi=600,
-            facecolor="white",
-            transparent=False,
-        )
-        buffer.seek(0)
-        with Image.open(buffer) as image:
-            with image.convert("RGB") as rgb_image:
-                rgb_image.save(
-                    tif_path,
-                    format="TIFF",
-                    dpi=(600, 600),
-                    compression="tiff_lzw",
-                )
+# The delivered function returns ordinary plotting objects. Define every QA-only
+# object below in this harness, using the returned objects and actual processed data.
+fig, plot_result = build_figure()
+REQUEST_TEXT = "<verbatim user request>"
+EXPECTED_CONTRACT = {
+    "contract_version": 2,
+    # Add the task-specific purpose, judgments, filters, panels, encodings, and outputs.
+}
+axes_registry = {}  # Bind panel roles to live axes from plot_result.
+encoding_evidence = {}  # Bind contract channels to live artists and actual values.
+ACTUAL_FILTER = None
+filter_counts = None
+size_encoding_specs = []
 
-
-# EXPECTED_CONTRACT is defined once from the original request.
 with qa_workspace() as qa_dir:
     draft_preview = qa_dir / "draft-preview.png"
     draft = audit_draft_figure(
@@ -610,6 +705,35 @@ def _self_test() -> dict[str, Any]:
             "import ultraplot as uplt\nfig, ax = uplt.subplots()\n",
             encoding="utf-8",
         )
+        clean_script_report = audit_delivery_script(script_path)
+        if not clean_script_report["ok"]:
+            raise AssertionError(clean_script_report["errors"])
+        contaminated_script = temporary_dir / "contaminated_plot.py"
+        contaminated_script.write_text(
+            "from figure_qa import audit_draft_figure\n"
+            "EXPECTED_CONTRACT = {}\n"
+            "encoding_evidence = {}\n"
+            "audit_draft_figure(None)\n",
+            encoding="utf-8",
+        )
+        contaminated_report = audit_delivery_script(contaminated_script)
+        if contaminated_report["ok"]:
+            raise AssertionError("delivery-script QA contamination was not detected")
+        if contaminated_report["forbidden_names"] != [
+            "EXPECTED_CONTRACT",
+            "encoding_evidence",
+        ]:
+            raise AssertionError(contaminated_report)
+        if contaminated_report["forbidden_imports"] != ["figure_qa"]:
+            raise AssertionError(contaminated_report)
+        if contaminated_report["forbidden_calls"] != ["audit_draft_figure"]:
+            raise AssertionError(contaminated_report)
+        contaminated_separation = audit_output_separation(
+            {"python": contaminated_script},
+            delivery_dir=temporary_dir,
+        )
+        if contaminated_separation["ok"]:
+            raise AssertionError("output-separation gate accepted QA contamination")
 
         target_width_mm = 183.0
         fig, axs = uplt.subplots(journal="nat2", refheight=1.8)

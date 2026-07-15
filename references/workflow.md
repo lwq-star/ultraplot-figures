@@ -225,7 +225,8 @@ a global event map and one requested/recommended distribution panel. If the user
 already asked for a map, keep the default to one map. This distinction prevents a
 data-affordance example from silently expanding an explicit task.
 
-Before coding, record a compact coverage table:
+Before coding, record a compact coverage table in transient planning state or the
+temporary QA harness, never in the delivered plotting script:
 
 | Requested judgment | Request span | Evidence kind | Panel | Channels | Limit |
 |---|---|---|---|---|---|
@@ -236,7 +237,8 @@ Area or color alone may support lookup or spatial gradients, but needs a
 request-specific justification when used as the only evidence for a distribution,
 comparison, or trend.
 
-Use contract version 2 for new figures:
+Use contract version 2 for new figures. Define this object only in the temporary QA
+harness or transient working state:
 
 ```python
 EXPECTED_CONTRACT = {
@@ -443,9 +445,11 @@ a top `CONFIG` block:
 - expected final width/height and QA tolerances when the target constrains them.
 
 Keep production code linear: load, validate or prepare, create `uplt.subplots(...)`,
-plot, format, add every artist and guide, force a final draw, and expose the objects
-needed by a temporary QA harness. Do not make the delivered script import Skill
-helpers.
+plot, format, add every artist and guide, force a final draw, and return only ordinary
+objects useful to normal callers, such as the figure, axes, processed data, and
+descriptive statistics. Do not make the delivered script import Skill helpers, declare
+QA contracts, construct evidence registries, or emit QA reports. The temporary harness
+adapts those ordinary return values for validation.
 
 Use two execution stages. The temporary draft stage runs live semantic/render QA and
 creates only a 150-200 dpi preview. After it passes, the production stage writes the
@@ -457,13 +461,13 @@ Use `scripts/figure_qa.py` as the stable public facade. It keeps four gates sepa
 task semantics, in-memory render geometry, saved artifacts, and final-scale visual
 inspection. Passing a later gate never closes an earlier defect.
 
-Run `python scripts/figure_qa.py --example` for the canonical call. The plotting
-module defines one distilled `EXPECTED_CONTRACT` that includes `figure_purpose` and
-`reader_judgment` alongside panel roles, mappings, filters, counts, and outputs. The
-temporary harness imports and reuses that same object. Keep the user's verbatim
-`REQUEST_TEXT` only in the temporary QA harness, not in the delivered plotting
-script. Never reconstruct the expected contract in the harness or copy expected
-fields into actual evidence.
+Run `python scripts/figure_qa.py --example` for the canonical temporary-harness call.
+The harness defines one distilled `EXPECTED_CONTRACT` that includes `figure_purpose`
+and `reader_judgment` alongside panel roles, mappings, filters, counts, and outputs. It
+also owns the user's verbatim `REQUEST_TEXT` and constructs live evidence from the
+delivered module's ordinary plotting objects and actual data. Never place these QA
+objects in the plotting module, reconstruct a second expected contract, or copy
+expected fields into actual evidence.
 
 ### Output lifecycle
 
@@ -482,10 +486,13 @@ with qa_workspace() as qa_dir:
 
 `deliverables` contains only requested scripts, production figures, data products,
 and reports. `qa_artifacts` contains temporary previews, helper reports, probes, logs,
-per-task caches, and bytecode. The facade rejects overlap and can require every QA path to stay
-under `qa_root` and outside `delivery_dir`. If the user explicitly requests a QA
-report, place that report in `deliverables`. The version-keyed environment capability
-cache is separate user-cache state and never a deliverable.
+per-task caches, bytecode, and any materialized harness source. The facade rejects
+overlap and can require every QA path to stay under `qa_root` and outside
+`delivery_dir`. It also parses existing Python deliverables and rejects QA-only
+contracts, evidence registries, Skill QA module imports, and Skill QA calls. Ordinary
+data validation and scientific summaries remain valid production code. If the user
+explicitly requests a QA report, place that report in `deliverables`. The version-keyed
+environment capability cache is separate user-cache state and never a deliverable.
 
 ### Draft stage
 

@@ -26,8 +26,6 @@ OUTPUT_DIR = Path(__file__).resolve().parent
 OUTPUT_STEM = OUTPUT_DIR / "earthquakes_2025_m5plus"
 
 FALLBACK_JOURNAL = "nat2"
-TARGET_WIDTH_MM = 183.0
-TARGET_HEIGHT_MM = None
 FALLBACK_DPI = 600
 FALLBACK_RC = {
     "pdf.fonttype": 42,
@@ -49,117 +47,6 @@ MAGNITUDE_SIZE_MAX_PT2 = 72.0
 MAGNITUDE_LEGEND_LEVELS = np.array([5.0, 6.0, 7.0, 8.0])
 MAGNITUDE_BINS = np.arange(5.0, 9.0001, 0.2)
 DEPTH_BINS_KM = np.arange(0.0, 675.0, 25.0)
-LAYOUT_OVERRIDE_REASONS = {
-    "share": (
-        "The first draft merged the incompatible magnitude and depth x-axis labels "
-        "across the two distribution panels."
-    )
-}
-
-ACTUAL_FILTER = {
-    "field": "properties.type",
-    "operator": "==",
-    "value": TARGET_EVENT_TYPE,
-}
-
-EXPECTED_CONTRACT = {
-    "contract_version": 2,
-    "figure_purpose": (
-        "Provide a cautious data overview of the spatial coverage and the magnitude "
-        "and hypocentral-depth characteristics of cataloged 2025 global M5+ earthquakes."
-    ),
-    "reader_judgment": (
-        "Judge where retained earthquakes occur and how their magnitudes and depths "
-        "are distributed, without inferring trends, mechanisms, or hazard."
-    ),
-    "requested_judgments": [
-        {
-            "id": "spatial_distribution",
-            "request_span": "2025年全球M5以上地震的空间分布",
-            "question": "Where do retained 2025 global M5+ earthquakes occur?",
-            "evidence_kind": "spatial_pattern",
-            "fields": ["longitude_deg", "latitude_deg"],
-        },
-        {
-            "id": "magnitude_characteristics",
-            "request_span": "震级",
-            "question": "What range and concentration of magnitudes does the catalog contain?",
-            "evidence_kind": "distribution",
-            "fields": ["magnitude", "earthquake_count"],
-        },
-        {
-            "id": "depth_characteristics",
-            "request_span": "深度特征",
-            "question": "What range and concentration of hypocentral depths does the catalog contain?",
-            "evidence_kind": "distribution",
-            "fields": ["hypocentral_depth_km", "earthquake_count"],
-        },
-    ],
-    "target_filter": ACTUAL_FILTER,
-    "panels": [
-        "global_map",
-        "magnitude_distribution",
-        "depth_distribution",
-    ],
-    "encodings": {
-        "global_map.x": "longitude_deg",
-        "global_map.y": "latitude_deg",
-        "global_map.size": "magnitude",
-        "global_map.color": "hypocentral_depth_km",
-        "magnitude_distribution.x": "magnitude",
-        "magnitude_distribution.height": "earthquake_count",
-        "depth_distribution.x": "hypocentral_depth_km",
-        "depth_distribution.height": "earthquake_count",
-    },
-    "evidence_map": {
-        "spatial_distribution": [
-            {
-                "panel": "global_map",
-                "channels": ["global_map.x", "global_map.y"],
-            }
-        ],
-        "magnitude_characteristics": [
-            {
-                "panel": "global_map",
-                "channels": ["global_map.size"],
-            },
-            {
-                "panel": "magnitude_distribution",
-                "channels": [
-                    "magnitude_distribution.x",
-                    "magnitude_distribution.height",
-                ],
-            },
-        ],
-        "depth_characteristics": [
-            {
-                "panel": "global_map",
-                "channels": ["global_map.color"],
-            },
-            {
-                "panel": "depth_distribution",
-                "channels": [
-                    "depth_distribution.x",
-                    "depth_distribution.height",
-                ],
-            },
-        ],
-    },
-    "outputs": ["python", "pdf", "tiff"],
-    "target_policy": {
-        "formats": {
-            "value": ["python", "pdf", "tiff"],
-            "source": "user",
-        },
-        "width_mm": {"value": TARGET_WIDTH_MM, "source": "size_fallback:nat2"},
-        "height_mm": {"value": TARGET_HEIGHT_MM, "source": "automatic"},
-        "tiff_dpi": {"value": FALLBACK_DPI, "source": "raster_fallback"},
-        "tiff_mode": {"value": "RGB", "source": "raster_fallback"},
-        "tiff_compression": {"value": "LZW", "source": "raster_fallback"},
-        "transparency": {"value": "opaque", "source": "raster_fallback"},
-        "pdf_fonttype": {"value": 42, "source": "pdf_tiff_fallback"},
-    },
-}
 
 
 def _finite_numeric(value: object, field: str, feature_id: object) -> float:
@@ -267,8 +154,8 @@ def load_catalog(path: Path = INPUT_GEOJSON) -> dict[str, object]:
     }
 
 
-def create_figure(data: dict[str, object]) -> dict[str, object]:
-    """Build the complete figure and expose live evidence for QA."""
+def create_figure(data: dict[str, object]) -> tuple[object, object]:
+    """Build the complete figure and return its figure and subplot container."""
     longitude = data["longitude_deg"]
     latitude = data["latitude_deg"]
     depth_km = data["hypocentral_depth_km"]
@@ -327,7 +214,7 @@ def create_figure(data: dict[str, object]) -> dict[str, object]:
         smax=MAGNITUDE_SIZE_MAX_PT2,
         add=False,
     )
-    size_legend = ax_map.legend(
+    ax_map.legend(
         size_handles,
         size_labels,
         title="Magnitude",
@@ -343,7 +230,7 @@ def create_figure(data: dict[str, object]) -> dict[str, object]:
     magnitude_counts, _ = np.histogram(magnitude, bins=MAGNITUDE_BINS)
     magnitude_centers = 0.5 * (MAGNITUDE_BINS[:-1] + MAGNITUDE_BINS[1:])
     magnitude_width = float(np.diff(MAGNITUDE_BINS)[0] * 0.9)
-    magnitude_bars = ax_magnitude.bar(
+    ax_magnitude.bar(
         magnitude_centers,
         magnitude_counts,
         width=magnitude_width,
@@ -364,7 +251,7 @@ def create_figure(data: dict[str, object]) -> dict[str, object]:
     depth_counts, _ = np.histogram(depth_km, bins=DEPTH_BINS_KM)
     depth_centers = 0.5 * (DEPTH_BINS_KM[:-1] + DEPTH_BINS_KM[1:])
     depth_width = float(np.diff(DEPTH_BINS_KM)[0] * 0.9)
-    depth_bars = ax_depth.bar(
+    ax_depth.bar(
         depth_centers,
         depth_counts,
         width=depth_width,
@@ -384,21 +271,7 @@ def create_figure(data: dict[str, object]) -> dict[str, object]:
     axs.format(abc="a", abcloc="ul")
     fig.canvas.draw()
 
-    return {
-        "fig": fig,
-        "axes": {
-            "global_map": ax_map,
-            "magnitude_distribution": ax_magnitude,
-            "depth_distribution": ax_depth,
-        },
-        "points": points,
-        "size_legend": size_legend,
-        "magnitude_bars": magnitude_bars,
-        "depth_bars": depth_bars,
-        "magnitude_counts": magnitude_counts,
-        "depth_counts": depth_counts,
-        "depth_norm": depth_norm,
-    }
+    return fig, axs
 
 
 def save_publication_fallback(
@@ -439,12 +312,12 @@ def save_publication_fallback(
     return pdf_path, tiff_path
 
 
-def summarize(data: dict[str, object], bundle: dict[str, object]) -> dict[str, object]:
+def summarize(data: dict[str, object], fig: object) -> dict[str, object]:
     magnitude = data["magnitude"]
     depth_km = data["hypocentral_depth_km"]
     longitude = data["longitude_deg"]
     latitude = data["latitude_deg"]
-    width_mm, height_mm = bundle["fig"].get_size_inches() * 25.4
+    width_mm, height_mm = fig.get_size_inches() * 25.4
     return {
         "source_crs": SOURCE_CRS,
         "display_projection": DISPLAY_PROJECTION,
@@ -471,9 +344,9 @@ def summarize(data: dict[str, object], bundle: dict[str, object]) -> dict[str, o
 def main() -> int:
     data = load_catalog()
     with uplt.rc.context(FALLBACK_RC):
-        bundle = create_figure(data)
-        pdf_path, tiff_path = save_publication_fallback(bundle["fig"])
-    result = summarize(data, bundle)
+        fig, _ = create_figure(data)
+        pdf_path, tiff_path = save_publication_fallback(fig)
+    result = summarize(data, fig)
     result["outputs"] = {
         "python": Path(__file__).resolve().relative_to(EXAMPLE_DIR).as_posix(),
         "pdf": pdf_path.resolve().relative_to(EXAMPLE_DIR).as_posix(),

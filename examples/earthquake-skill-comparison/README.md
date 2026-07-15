@@ -27,9 +27,10 @@ translations are:
 - Data source: [USGS Earthquake Catalog](https://earthquake.usgs.gov/earthquakes/search/)
 
 The model determined the design, layout, and visual encodings for both figures. No
-second-round human edits were made after figure generation. For public use, only the
-local file paths in the scripts were replaced with repository-relative paths; the
-figure content was unchanged.
+second-round visual redesign or data changes were made after figure generation. For
+public use, local file paths were replaced with repository-relative paths and internal
+QA scaffolding was removed from the delivered scripts; these code-only changes did not
+alter the figure content.
 
 ## Shared prompt
 
@@ -80,7 +81,7 @@ not cropped, recolored, or rearranged.
 | TIFF resolution | 600 dpi | 600 dpi |
 | TIFF color mode | RGB, no alpha | RGB, no alpha |
 | TIFF compression | LZW | LZW |
-| Script lines | 487 | 532 |
+| Script lines | 360 | 532 |
 
 ## Reading notes
 
