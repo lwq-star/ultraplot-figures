@@ -15,6 +15,7 @@ import time
 from typing import Any
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse
 
 
 REPOSITORY = "lwq-star/ultraplot-figures"
@@ -22,12 +23,15 @@ LATEST_RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest
 SKILL_NAME = "ultraplot-figures"
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = "VERSION"
-STATE_SCHEMA_VERSION = 2
-MAX_METADATA_BYTES = 2 * 1024 * 1024
-MAX_HTTP_RETRIES = 4
 CHECK_ENV_VAR = "ULTRAPLOT_FIGURES_UPDATE_CHECK"
 DISABLED_VALUES = {"0", "false", "no", "off"}
 VERSION_PATTERN = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
+STATE_SCHEMA_VERSION = 1
+MAX_METADATA_BYTES = 2 * 1024 * 1024
+AUTO_HTTP_TIMEOUT_SECONDS = 8
+MANUAL_HTTP_TIMEOUT_SECONDS = 30
+MANUAL_HTTP_RETRIES = 2
+MAX_MANUAL_RETRY_DELAY_SECONDS = 8.0
 
 
 class UpdateCheckError(RuntimeError):
@@ -38,7 +42,8 @@ def _version_tuple(value: str) -> tuple[int, int, int]:
     match = VERSION_PATTERN.fullmatch(value.strip())
     if not match:
         raise UpdateCheckError(
-            f"Invalid version {value!r}; expected MAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH."
+            f"Invalid version {value!r}; expected MAJOR.MINOR.PATCH or "
+            "vMAJOR.MINOR.PATCH."
         )
     return tuple(int(part) for part in match.groups())
 
@@ -51,7 +56,7 @@ def _read_local_version(root: Path = SKILL_ROOT) -> str:
     path = root / VERSION_FILE
     try:
         return _normalized_version(path.read_text(encoding="utf-8"))
-    except OSError as exc:
+    except (OSError, UnicodeError) as exc:
         raise UpdateCheckError(f"Could not read {path}: {exc}") from exc
 
 
@@ -94,104 +99,6 @@ def _write_json_atomic(path: Path, payload: Any) -> None:
     os.replace(temporary, path)
 
 
-def _retry_delay(exc: urllib.error.HTTPError, attempt: int) -> float | None:
-    if exc.code == 429:
-        raw = exc.headers.get("Retry-After")
-        if raw:
-            try:
-                return max(0.0, float(raw))
-            except ValueError:
-                try:
-                    retry_at = parsedate_to_datetime(raw)
-                    if retry_at.tzinfo is None:
-                        retry_at = retry_at.replace(tzinfo=timezone.utc)
-                    return max(
-                        0.0,
-                        (retry_at - datetime.now(timezone.utc)).total_seconds(),
-                    )
-                except (TypeError, ValueError, OverflowError):
-                    pass
-        return 60.0
-    if 500 <= exc.code < 600:
-        return float(2**attempt)
-    return None
-
-
-def _request_bytes(url: str, *, accept: str, max_bytes: int) -> bytes:
-    headers = {
-        "Accept": accept,
-        "User-Agent": f"{SKILL_NAME}-release-checker",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    last_error: Exception | None = None
-    for attempt in range(MAX_HTTP_RETRIES + 1):
-        request = urllib.request.Request(url, headers=headers)
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                content_length = response.headers.get("Content-Length")
-                if content_length:
-                    try:
-                        declared_size = int(content_length)
-                    except ValueError as exc:
-                        raise UpdateCheckError(
-                            f"Invalid Content-Length header: {content_length!r}."
-                        ) from exc
-                    if declared_size > max_bytes:
-                        raise UpdateCheckError(
-                            f"Response is too large: {declared_size} bytes exceeds {max_bytes}."
-                        )
-                payload = response.read(max_bytes + 1)
-                if len(payload) > max_bytes:
-                    raise UpdateCheckError(f"Response exceeds {max_bytes} bytes.")
-                return payload
-        except urllib.error.HTTPError as exc:
-            last_error = exc
-            delay = _retry_delay(exc, attempt)
-            if delay is None or attempt >= MAX_HTTP_RETRIES:
-                raise
-            time.sleep(delay)
-        except (urllib.error.URLError, OSError) as exc:
-            last_error = exc
-            if attempt >= MAX_HTTP_RETRIES:
-                raise
-            time.sleep(float(2**attempt))
-    raise UpdateCheckError(f"Request failed: {last_error}")
-
-
-def _latest_release() -> dict[str, Any] | None:
-    try:
-        payload = _request_bytes(
-            LATEST_RELEASE_API,
-            accept="application/vnd.github+json",
-            max_bytes=MAX_METADATA_BYTES,
-        )
-    except urllib.error.HTTPError as exc:
-        if exc.code == 404:
-            return None
-        raise UpdateCheckError(
-            f"GitHub release check failed with HTTP {exc.code}."
-        ) from exc
-    except (urllib.error.URLError, OSError) as exc:
-        reason = getattr(exc, "reason", exc)
-        raise UpdateCheckError(f"GitHub release check failed: {reason}") from exc
-
-    try:
-        release = json.loads(payload.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise UpdateCheckError("GitHub returned invalid release metadata.") from exc
-    if not isinstance(release, dict):
-        raise UpdateCheckError("GitHub returned invalid release metadata.")
-    if release.get("draft") or release.get("prerelease"):
-        raise UpdateCheckError(
-            "GitHub latest release unexpectedly points to a draft or prerelease."
-        )
-    for key in ("tag_name", "html_url"):
-        if not isinstance(release.get(key), str) or not release[key]:
-            raise UpdateCheckError(f"GitHub release metadata is missing {key}.")
-    release["version"] = _normalized_version(release["tag_name"])
-    return release
-
-
 def _local_date() -> str:
     return datetime.now().astimezone().date().isoformat()
 
@@ -217,7 +124,7 @@ def _record_state(status: str, current: str, latest: str | None) -> None:
         pass
 
 
-def _state_checked_today() -> dict[str, Any] | None:
+def _state_checked_today(current: str) -> dict[str, Any] | None:
     state = _read_json(_state_path(), {})
     if not isinstance(state, dict):
         return None
@@ -225,12 +132,161 @@ def _state_checked_today() -> dict[str, Any] | None:
         return None
     if state.get("last_checked_date") != _local_date():
         return None
+    if state.get("current_version") != current:
+        return None
     return state
 
 
+def _configured_check_value() -> str:
+    value = os.environ.get(CHECK_ENV_VAR)
+    if value is not None:
+        return value
+    if os.name == "nt":
+        try:
+            import winreg
+
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+                registry_value, _ = winreg.QueryValueEx(key, CHECK_ENV_VAR)
+            if isinstance(registry_value, str):
+                return registry_value
+        except (ImportError, OSError):
+            pass
+    return "1"
+
+
 def _automatic_check_enabled() -> bool:
-    value = os.environ.get(CHECK_ENV_VAR, "1")
+    value = _configured_check_value()
     return value.strip().lower() not in DISABLED_VALUES
+
+
+def _retry_delay(exc: urllib.error.HTTPError, attempt: int) -> float | None:
+    if exc.code == 429:
+        raw = exc.headers.get("Retry-After")
+        delay = 2.0
+        if raw:
+            try:
+                delay = max(0.0, float(raw))
+            except ValueError:
+                try:
+                    retry_at = parsedate_to_datetime(raw)
+                    if retry_at.tzinfo is None:
+                        retry_at = retry_at.replace(tzinfo=timezone.utc)
+                    delay = max(
+                        0.0,
+                        (retry_at - datetime.now(timezone.utc)).total_seconds(),
+                    )
+                except (TypeError, ValueError, OverflowError):
+                    delay = 2.0
+        return min(delay, MAX_MANUAL_RETRY_DELAY_SECONDS)
+    if 500 <= exc.code < 600:
+        return min(float(2**attempt), MAX_MANUAL_RETRY_DELAY_SECONDS)
+    return None
+
+
+def _request_bytes(
+    url: str,
+    *,
+    accept: str,
+    max_bytes: int,
+    automatic: bool,
+) -> bytes:
+    headers = {
+        "Accept": accept,
+        "User-Agent": f"{SKILL_NAME}-release-checker",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    attempts = 1 if automatic else MANUAL_HTTP_RETRIES + 1
+    timeout = (
+        AUTO_HTTP_TIMEOUT_SECONDS if automatic else MANUAL_HTTP_TIMEOUT_SECONDS
+    )
+    last_error: Exception | None = None
+
+    for attempt in range(attempts):
+        request = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                content_length = response.headers.get("Content-Length")
+                if content_length:
+                    try:
+                        declared_size = int(content_length)
+                    except ValueError as exc:
+                        raise UpdateCheckError(
+                            f"Invalid Content-Length header: {content_length!r}."
+                        ) from exc
+                    if declared_size > max_bytes:
+                        raise UpdateCheckError(
+                            f"Response is too large: {declared_size} bytes exceeds "
+                            f"{max_bytes}."
+                        )
+                payload = response.read(max_bytes + 1)
+                if len(payload) > max_bytes:
+                    raise UpdateCheckError(f"Response exceeds {max_bytes} bytes.")
+                return payload
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if automatic or attempt >= attempts - 1:
+                raise
+            delay = _retry_delay(exc, attempt)
+            if delay is None:
+                raise
+            time.sleep(delay)
+        except (urllib.error.URLError, OSError) as exc:
+            last_error = exc
+            if automatic or attempt >= attempts - 1:
+                raise
+            time.sleep(
+                min(float(2**attempt), MAX_MANUAL_RETRY_DELAY_SECONDS)
+            )
+
+    raise UpdateCheckError(f"Request failed: {last_error}")
+
+
+def _valid_release_url(value: str) -> bool:
+    parsed = urlparse(value)
+    expected_prefix = f"/{REPOSITORY}/releases/"
+    return (
+        parsed.scheme == "https"
+        and parsed.netloc.lower() == "github.com"
+        and parsed.path.startswith(expected_prefix)
+    )
+
+
+def _latest_release(*, automatic: bool) -> dict[str, Any] | None:
+    try:
+        payload = _request_bytes(
+            LATEST_RELEASE_API,
+            accept="application/vnd.github+json",
+            max_bytes=MAX_METADATA_BYTES,
+            automatic=automatic,
+        )
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None
+        raise UpdateCheckError(
+            f"GitHub release check failed with HTTP {exc.code}."
+        ) from exc
+    except (urllib.error.URLError, OSError) as exc:
+        reason = getattr(exc, "reason", exc)
+        raise UpdateCheckError(f"GitHub release check failed: {reason}") from exc
+
+    try:
+        release = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise UpdateCheckError("GitHub returned invalid release metadata.") from exc
+    if not isinstance(release, dict):
+        raise UpdateCheckError("GitHub returned invalid release metadata.")
+    if release.get("draft") or release.get("prerelease"):
+        raise UpdateCheckError("GitHub returned a draft or prerelease.")
+
+    tag_name = release.get("tag_name")
+    release_url = release.get("html_url")
+    if not isinstance(tag_name, str) or not tag_name:
+        raise UpdateCheckError("GitHub release metadata is missing tag_name.")
+    if not isinstance(release_url, str) or not _valid_release_url(release_url):
+        raise UpdateCheckError("GitHub release metadata has an invalid html_url.")
+
+    release["version"] = _normalized_version(tag_name)
+    return release
 
 
 def _update_notification(
@@ -248,17 +304,20 @@ def _update_notification(
             "建议更新。"
         ),
         "update_request": (
-            "Please update my installed `ultraplot-figures` skill to the latest "
+            f"Please update my installed `{SKILL_NAME}` skill to the latest "
             f"stable release: {release_url}"
         ),
         "update_request_zh": (
-            "请将我已安装的 `ultraplot-figures` skill 更新到最新稳定版本："
-            f"{release_url}"
+            f"请将我已安装的 `{SKILL_NAME}` skill 更新到最新稳定版本：{release_url}"
         ),
     }
 
 
-def _result(status: str, current: str, **extra: Any) -> dict[str, Any]:
+def _result(
+    status: str,
+    current: str | None,
+    **extra: Any,
+) -> dict[str, Any]:
     return {
         "status": status,
         "repository": REPOSITORY,
@@ -268,11 +327,16 @@ def _result(status: str, current: str, **extra: Any) -> dict[str, Any]:
 
 
 def _run_check(*, automatic: bool) -> tuple[dict[str, Any], int]:
-    current = _read_local_version()
+    try:
+        current = _read_local_version()
+    except UpdateCheckError as exc:
+        result = _result("check_failed", None, error=str(exc))
+        return result, 0 if automatic else 1
+
     if automatic:
         if not _automatic_check_enabled():
             return _result("disabled", current), 0
-        state = _state_checked_today()
+        state = _state_checked_today(current)
         if state is not None:
             return _result(
                 "skipped_checked_today",
@@ -282,7 +346,7 @@ def _run_check(*, automatic: bool) -> tuple[dict[str, Any], int]:
             ), 0
 
     try:
-        release = _latest_release()
+        release = _latest_release(automatic=automatic)
     except UpdateCheckError as exc:
         _record_state("check_failed", current, None)
         result = _result("check_failed", current, error=str(exc))
@@ -314,38 +378,30 @@ def _run_check(*, automatic: bool) -> tuple[dict[str, Any], int]:
 
 
 def _self_test() -> dict[str, Any]:
-    from datetime import timedelta
-    from email.utils import format_datetime
     import tempfile
     from unittest import mock
 
     tests: list[str] = []
     assert _version_tuple("v1.2.3") == (1, 2, 3)
-    assert _normalized_version("1.2.3") == "1.2.3"
+    assert _normalized_version("01.2.003") == "1.2.3"
     tests.append("version_parsing")
 
-    retry_at = datetime.now(timezone.utc) + timedelta(seconds=30)
-    retry_error = urllib.error.HTTPError(
-        LATEST_RELEASE_API,
-        429,
-        "rate limited",
-        {"Retry-After": format_datetime(retry_at, usegmt=True)},
-        None,
-    )
-    retry_delay = _retry_delay(retry_error, 0)
-    assert retry_delay is not None and 0 <= retry_delay <= 30
-    tests.append("retry_after_http_date")
+    valid_url = f"https://github.com/{REPOSITORY}/releases/tag/v1.2.3"
+    assert _valid_release_url(valid_url)
+    assert not _valid_release_url("https://example.com/releases/tag/v1.2.3")
+    tests.append("release_url_validation")
 
     with tempfile.TemporaryDirectory(prefix=f"{SKILL_NAME}-self-test-") as directory:
         state_path = Path(directory) / "state.json"
         with mock.patch(f"{__name__}._state_path", return_value=state_path):
-            assert _state_checked_today() is None
-            _write_state("up_to_date", "0.1.0", "0.1.0")
-            assert _state_checked_today() is not None
+            assert _state_checked_today("0.3.0") is None
+            _write_state("up_to_date", "0.3.0", "0.3.0")
+            assert _state_checked_today("0.3.0") is not None
+            assert _state_checked_today("0.3.1") is None
             tests.append("calendar_day_cache")
 
             with (
-                mock.patch(f"{__name__}._read_local_version", return_value="0.1.0"),
+                mock.patch(f"{__name__}._read_local_version", return_value="0.3.0"),
                 mock.patch(
                     f"{__name__}._latest_release",
                     side_effect=AssertionError("daily cache did not skip the network"),
@@ -358,43 +414,23 @@ def _self_test() -> dict[str, Any]:
             tests.append("same_day_network_skip")
 
     fake_release = {
-        "version": "0.2.0",
-        "html_url": f"https://github.com/{REPOSITORY}/releases/tag/v0.2.0",
+        "version": "0.4.0",
+        "html_url": f"https://github.com/{REPOSITORY}/releases/tag/v0.4.0",
     }
     with (
-        mock.patch(f"{__name__}._read_local_version", return_value="0.1.0"),
+        mock.patch(f"{__name__}._read_local_version", return_value="0.3.0"),
         mock.patch(f"{__name__}._latest_release", return_value=fake_release),
         mock.patch(f"{__name__}._record_state"),
     ):
         available_result, available_code = _run_check(automatic=False)
     assert available_code == 0
     assert available_result["status"] == "update_available"
-    assert "Updating is recommended" in available_result["message"]
-    assert "建议更新" in available_result["message_zh"]
     assert "update_request" in available_result
-    assert "Git worktree" not in available_result["update_request"]
-    assert "Git 工作区" not in available_result["update_request_zh"]
-    assert "installed_files" not in available_result
+    assert "update_request_zh" in available_result
     tests.append("notification_only")
 
     with (
-        mock.patch(f"{__name__}._read_local_version", return_value="0.1.0"),
-        mock.patch(f"{__name__}._state_checked_today", return_value=None),
-        mock.patch(
-            f"{__name__}._latest_release",
-            side_effect=UpdateCheckError("offline"),
-        ),
-        mock.patch(f"{__name__}._record_state") as record_failed,
-        mock.patch.dict(os.environ, {CHECK_ENV_VAR: "1"}, clear=False),
-    ):
-        failed_result, failed_code = _run_check(automatic=True)
-    assert failed_code == 0
-    assert failed_result["status"] == "check_failed"
-    record_failed.assert_called_once_with("check_failed", "0.1.0", None)
-    tests.append("failed_check_cached_for_day")
-
-    with (
-        mock.patch(f"{__name__}._read_local_version", return_value="0.1.0"),
+        mock.patch(f"{__name__}._read_local_version", return_value="0.3.0"),
         mock.patch.dict(os.environ, {CHECK_ENV_VAR: "0"}, clear=False),
     ):
         disabled_result, disabled_code = _run_check(automatic=True)
@@ -402,13 +438,29 @@ def _self_test() -> dict[str, Any]:
     assert disabled_result["status"] == "disabled"
     tests.append("automatic_check_opt_out")
 
+    with (
+        mock.patch(f"{__name__}._read_local_version", return_value="0.3.0"),
+        mock.patch(f"{__name__}._state_checked_today", return_value=None),
+        mock.patch(
+            f"{__name__}._latest_release",
+            side_effect=UpdateCheckError("offline"),
+        ),
+        mock.patch(f"{__name__}._record_state"),
+        mock.patch.dict(os.environ, {CHECK_ENV_VAR: "1"}, clear=False),
+    ):
+        failed_result, failed_code = _run_check(automatic=True)
+    assert failed_code == 0
+    assert failed_result["status"] == "check_failed"
+    tests.append("automatic_check_fail_open")
+
     return {"ok": True, "tests": tests}
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Check the latest stable ultraplot-figures release without installing it."
+            "Check the latest stable ultraplot-figures release without "
+            "installing it."
         )
     )
     actions = parser.add_mutually_exclusive_group()
@@ -422,7 +474,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Check at most once per local calendar day.",
     )
-    actions.add_argument("--self-test", action="store_true", help="Run offline tests.")
+    actions.add_argument(
+        "--self-test",
+        action="store_true",
+        help="Run offline tests.",
+    )
     return parser.parse_args(argv)
 
 

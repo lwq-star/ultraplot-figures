@@ -1,78 +1,64 @@
 [English](README.md) | **简体中文**
 
-# `ultraplot-figures` 科研绘图对比：预测值与真实值关系
+# UltraPlot Skill A/B 测试：相关性散点图
 
-本案例使用同一份 Excel 数据和同一条科研绘图提示词，对比允许使用
-`$ultraplot-figures` 与不使用任何 skill 两种条件下生成的图件和脚本。
+本示例针对同一个相关性散点图任务，对比两次相互独立生成的 UltraPlot 结果。
+两组提示词的唯一区别是是否显式调用 `$ultraplot-figures`。
 
-## 测试设置
+## 输入数据
 
-| 条件 | 使用 skill | 不使用 skill |
-|---|---|---|
-| Skill 设置 | 只允许 `$ultraplot-figures`，不得使用其他 skill | 不允许使用任何 skill，也不得读取 skill 文件或 helper |
-| 绘图库设置 | 由 `$ultraplot-figures` 的规则决定 | 优先使用 UltraPlot，其他普通 Python 库也可直接使用 |
-| 输入数据 | 同一份 XLSX | 同一份 XLSX |
-| 科研绘图提示词 | 完全相同 | 完全相同 |
-| 生成模型与客户端 | `GPT-5.6 sol`，Codex Desktop for Windows | `GPT-5.6 sol`，Codex Desktop for Windows |
+- 工作簿：[multiple_data.xlsx](data/multiple_data.xlsx)
+- 工作表：`Sheet1`
+- 规模：4,305 行 × 32 个数值列
+- 结构：4 种地类 × 4 种模型 × `_0`/`_1` 配对字段
+- 地类：`cropland`、`forest`、`grassland`、`savanna`
+- 模型：`DNN`、`GBRT`、`LR`、`SVR`
+- 每个地类下各面板有效配对数：3,499、3,965、4,221、4,305
+- 16 个面板合计展示 63,960 个有限值配对
+- 源数据没有提供单位和描述性变量名，测试中未自行补充。
 
-两个分支在共同科研绘图提示词之前分别收到以下设置：
+## 提示词控制
 
-- 使用 skill：`请只使用 $ultraplot-figures，不要使用包括 xlsx 在内的其他任何 skill。`
-- 不使用 skill：`请不要使用任何 skill，也不得读取任何 skill 的 SKILL.md、references、scripts 或 helper。UltraPlot 库优先使用，其他普通 Python 库也可以直接使用。`
+共同任务为：
 
-- 数据：[四类土地与四种模型的预测数据](data/multiple_data.xlsx)
-- 工作表：`Sheet1`，共 4,305 行和 32 个数值列
-- 字段：`_0` 表示真实值，`_1` 表示对应的预测值
-
-两组图件的设计、布局和视觉编码均由模型完成，图件生成后未进行二次视觉设计或数据
-修改。为便于公开使用，脚本中的本地文件路径已替换为仓库相对路径，并从交付脚本中
-移除内部 QA 脚手架；这些代码整理没有改变图形内容。
-
-## 共同提示词
-
-> 请根据下面的数据制作一张适合科研论文使用的预测值与真实值关系图件：
+> 绘图数据文件：`data/multiple_data.xlsx`
 >
-> 数据文件：`data/multiple_data.xlsx`
+> 制作一张适合论文使用的相关性散点图，比较 cropland、forest、grassland 和
+> savanna 四种地类中，DNN、GBRT、LR、SVR 四种模型下 `_0` 与 `_1` 的关系。
 >
-> 数据用于比较 cropland、forest、grassland 和 savanna 四种土地类型下 LR、SVR、GBRT 和 DNN 模型的预测效果。每组列名中的 _0 表示真实值，_1 表示对应的预测值。
->
-> 我希望图中能够完整展示不同土地类型和模型组合中预测值与真实值的一致性，让读者直观比较各模型在不同土地类型下的预测表现、误差特征和可能的系统偏差。
->
-> 请先检查工作簿内容，再根据数据特点选择合适的图形、布局、视觉编码和统计标注。请正确处理缺失值；如果数据没有提供响应变量名称或单位，不要自行猜测。请保持科学表达谨慎，不要作超出这些预测值与真实值配对数据支持范围的推断。
->
-> 请提供可编辑、可独立运行的 Python 绘图脚本，以及 PDF 和高分辨率 TIFF 图件。
+> 请提供可直接运行的 Python 代码，导出 PDF 和 PNG。
+
+只有绘图指令发生变化：
+
+| 条件 | 指令 |
+|---|---|
+| 使用 skill | `请用 [$ultraplot-figures](../../SKILL.md) 制作图件。` |
+| 不使用 skill | `请用 UltraPlot 制作图件。` |
 
 ## 图件对比
 
-| 使用 `$ultraplot-figures` | 不使用任何 skill |
+| 使用 `$ultraplot-figures` | 不使用 skill |
 |:---:|:---:|
-| ![使用 ultraplot-figures 生成的科研图件](assets/with_skill.png) | ![不使用 skill 生成的科研图件](assets/without_skill.png) |
-
-两张预览均由各自最终 TIFF 在白色背景上缩放至 1,400 px 等宽生成，保持原始纵横比，没有裁切、调色或重新排版。
+| ![使用 skill 生成的相关性散点图](with_skill/correlation_scatter_with_skill.png) | ![不使用 skill 生成的相关性散点图](without_skill/correlation_scatter.png) |
 
 ## 输出文件
 
-| 文件 | 使用 `$ultraplot-figures` | 不使用任何 skill |
+| 类型 | 使用 `$ultraplot-figures` | 不使用 skill |
 |---|---|---|
-| Python 脚本 | [prediction_vs_observed_ultraplot.py](with_skill/prediction_vs_observed_ultraplot.py) | [plot_prediction_vs_observed.py](without_skill/plot_prediction_vs_observed.py) |
-| PDF | [prediction_vs_observed.pdf](with_skill/prediction_vs_observed.pdf) | [prediction_vs_observed_4x4.pdf](without_skill/prediction_vs_observed_4x4.pdf) |
-| TIFF | [prediction_vs_observed.tif](with_skill/prediction_vs_observed.tif) | [prediction_vs_observed_4x4.tiff](without_skill/prediction_vs_observed_4x4.tiff) |
+| 数据处理脚本 | [prepare_correlation_with_skill.py](with_skill/prepare_correlation_with_skill.py) | 数据处理位于绘图脚本中 |
+| 绘图脚本 | [plot_correlation_with_skill.py](with_skill/plot_correlation_with_skill.py) | [correlation_scatter_ultraplot.py](without_skill/correlation_scatter_ultraplot.py) |
+| PDF | [correlation_scatter_with_skill.pdf](with_skill/correlation_scatter_with_skill.pdf) | [correlation_scatter.pdf](without_skill/correlation_scatter.pdf) |
+| PNG | [correlation_scatter_with_skill.png](with_skill/correlation_scatter_with_skill.png) | [correlation_scatter.png](without_skill/correlation_scatter.png) |
+| 处理后配对数据 | [correlation_pairs_with_skill.csv](with_skill/correlation_pairs_with_skill.csv) | 不单独写出 |
+| 面板统计 | [correlation_stats_with_skill.csv](with_skill/correlation_stats_with_skill.csv) | [correlation_statistics.csv](without_skill/correlation_statistics.csv) |
+| 数据审计 | [data_audit_with_skill.json](with_skill/data_audit_with_skill.json) | 由脚本断言并输出到终端 |
+| 图件验收 | [verification_with_skill.json](with_skill/verification_with_skill.json) | 脚本内断言与终端报告 |
 
-## 客观文件信息
+## 客观输出信息
 
-| 项目 | 使用 `$ultraplot-figures` | 不使用任何 skill |
+| 项目 | 使用 `$ultraplot-figures` | 不使用 skill |
 |---|---:|---:|
 | PDF 页数 | 1 | 1 |
-| PDF 页面尺寸 | 183.00 × 165.64 mm | 208.91 × 207.76 mm |
-| PDF 字体 | 2 个字体，全部嵌入；无 Type 3 | 3 个字体，全部嵌入；均为 Type 3 |
-| PDF 内嵌栅格 | 16 个，最低有效分辨率 600 dpi | 16 个，最低有效分辨率 600 dpi |
-| TIFF 像素尺寸 | 4,322 × 3,912 px | 4,934 × 4,907 px |
-| TIFF 分辨率 | 600 dpi | 600 dpi |
-| TIFF 色彩模式 | RGB，无 alpha | RGB，无 alpha |
-| TIFF 压缩 | LZW | LZW |
-| 脚本行数 | 370 | 371 |
-
-## 阅读说明
-
-两种条件分别选择数据层、统计标注、布局和视觉编码，因此这些差异属于案例结果的一部分。
-科研图件和代码仍需由研究者结合变量含义、数据来源和投稿要求审核。
+| PDF 页面尺寸 | 183.000 × 187.977 mm | 191.385 × 185.148 mm |
+| PNG 像素尺寸 | 7,204 × 7,400 px | 3,013 × 2,915 px |
+| PNG 分辨率元数据 | 999.998 dpi | 399.999 dpi |

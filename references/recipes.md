@@ -1,193 +1,105 @@
-# UltraPlot recipes
+# UltraPlot recipes — good-default figures
 
-Use these as small editable starting points. Replace synthetic arrays with real data
-and keep paths/settings in a top config block. For publication-facing deliverables,
-follow the target venue first and `references/scientific-figures.md` second. The
-`nat2` + PDF + 600 dpi TIFF combination shown below is only a fallback when the
-target venue, physical size, and explicit output requirements are all unknown.
+Copy, adapt, render. Each is deliberately minimal, uses the skill default `journal="nat2"`, and leaves spacing to UltraPlot's automatic layout. All assume `import numpy as np; import ultraplot as uplt` and `EXPORT_DPI = 1000`.
 
-Recipes are starting points, not copy-ready scientific decisions. Audit layout,
-encoding, guide ownership, units, final physical size, and export settings before
-reusing a recipe on a new dataset.
-
-Start with UltraPlot defaults. Do not add `innerpad`, `outerpad`, `panelpad`, `wpad`,
-`hpad`, `pad`, `hspace`, `wspace`, `space`, manual margins, global font-size rc
-settings, gridline linewidths, or gridline colors in first-pass recipes. Do not add
-subplot titles. Render once, then add the narrowest single override needed for real
-overlap, clipping, poor contrast, or a target-style requirement, and record why.
-
-## Common script header
-
+## 1. Multi-line comparison with a legend
 ```python
-import matplotlib
-matplotlib.use("Agg")
-
-from pathlib import Path
-import numpy as np
-import ultraplot as uplt
-
-OUTPUT_DIR = Path("figures")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-JOURNAL = "nat2"  # only when venue, size, and output rules are all unknown
-DPI = 600         # fallback raster resolution
+fig, ax = uplt.subplots(journal="nat2")
+ax.plot(x, Y, lw=2, cycle="colorblind", labels=["control", "treatment", "baseline"],
+        legend="b", legend_kw={"ncols": 3, "frame": False})
+ax.format(xlabel="time (s)", ylabel="signal (mV)", grid=False)
+fig.save("lines.pdf", dpi=EXPORT_DPI)
 ```
 
-For this fallback, copy the standalone `save_publication_fallback` function and
-`FALLBACK_RC` settings from `references/scientific-figures.md` into the delivered
-script. Do not import them from the installed skill. Keep production artists opaque;
-the helper writes Type 42 PDF plus a white-background RGB LZW TIFF.
-
-When adapting several recipes in one script, use figure-specific output names such as
-`scatter.pdf` and `scatter.tif`. Save only formats required by the target. Do not add
-PNG outputs unless the user explicitly requests PNG, preview images, quick drafts, or
-check-only rasters.
-
-## Line
-
+## 2. Small-multiples grid with shared axes + panel letters
 ```python
-fig, ax = uplt.subplots(journal=JOURNAL)
-ax.plot(x, y1, label="A", color="blue7")
-ax.plot(x, y2, label="B", color="orange7")
-ax.legend(loc="b", ncols=2, frame=False)
-ax.format(xlabel="Time", ylabel="Value", grid=True)
-save_publication_fallback(fig, OUTPUT_DIR / "line", dpi=DPI)
+fig, axs = uplt.subplots(ncols=3, nrows=2, journal="nat2")
+for ax, y in zip(axs, series):
+    ax.plot(x, y, lw=1.5, color="denim")
+axs.format(abc="a.", abcloc="ul",
+           xlabel="x (units)", ylabel="y (units)",
+           toplabels=("Low", "Mid", "High"), leftlabels=("Run 1", "Run 2"))
 ```
 
-## Scatter with colorbar
-
+## 3. 2D field with a shared outer colorbar
 ```python
-fig, ax = uplt.subplots(journal=JOURNAL)
-ax.scatter(
-    x,
-    y,
-    c=z,
-    cmap="viridis",
-    s=18,
-    absolute_size=True,
-    colorbar="r",
-    colorbar_kw={"label": "z (units)"},
-    rasterized=True,
-)
-ax.format(xlabel="x", ylabel="y", grid=True)
-save_publication_fallback(fig, OUTPUT_DIR / "scatter", dpi=DPI)
+fig, axs = uplt.subplots(ncols=2, journal="nat2")
+for ax, field in zip(axs, fields):
+    m = ax.pcolormesh(lon, lat, field, cmap="batlow", levels=11, extend="both")
+axs.format(abc="a.", xlabel="x", ylabel="y")
+fig.colorbar(m, loc="b", label="T (K)", length=0.7)   # one bar for the row
 ```
 
-A scalar `s` is an absolute marker area in points squared here. For a semantic
-array-valued size encoding, pass original values with `smin`/`smax` and build a
-`sizelegend` from the same values and area range; see `references/ultraplot-api.md`.
-
-## Grouped or stacked bars
-
+## 4. Signed / anomaly field (diverging, centered at zero)
 ```python
-fig, ax = uplt.subplots(journal=JOURNAL)
-ax.bar(x - width / 2, control, width=width, label="Control", color="blue6")
-ax.bar(x + width / 2, treatment, width=width, label="Treatment", color="orange6")
-ax.legend(loc="t", ncols=2, frame=False)
-ax.format(xlocator=x, xticklabels=groups, ylabel="Value", grid=True)
-save_publication_fallback(fig, OUTPUT_DIR / "grouped_bar", dpi=DPI)
+fig, ax = uplt.subplots(journal="nat2")
+m = ax.contourf(anomaly, cmap="roma", levels=uplt.arange(-6, 6, 1), extend="both")
+ax.colorbar(m, loc="r", label="anomaly (K)")
+ax.format(xlabel="lon", ylabel="lat")
 ```
 
-For stacked bars, accumulate `bottom` and call `ax.bar(..., bottom=bottom)`. Avoid
-truncated bar baselines unless the axis break is explicit and justified.
-
-## Distribution
-
+## 5. Correlation matrix as a labeled heatmap
 ```python
-fig, axs = uplt.subplots(
-    ncols=3, journal=JOURNAL, share=False, span=False
-)
-positions = list(range(1, len(labels) + 1))
-axs[0].hist(values, bins=30, color="gray5", edgecolor="white")
-axs[0].format(xlabel="Value", ylabel="Count", grid=True)
-# Set category tick labels via format() instead of version-sensitive boxplot keywords.
-axs[1].boxplot(grouped_values, fillcolor="blue3")
-axs[1].format(xlabel="Group", ylabel="Value",
-              xlocator=positions, xticklabels=labels, grid=True)
-axs[2].violinplot(grouped_values, fillcolor="orange3")
-axs[2].format(xlabel="Group", ylabel="Value",
-              xlocator=positions, xticklabels=labels, grid=True)
-axs.format(abc="a")
-save_publication_fallback(fig, OUTPUT_DIR / "distribution", dpi=DPI)
+fig, ax = uplt.subplots(journal="nat2")
+m = ax.heatmap(corr, cmap="BuRd", vmin=-1, vmax=1, labels=True,
+               labels_kw={"precision": 2})
+ax.format(xticklabels=names, yticklabels=names, xrotation=45)
+ax.colorbar(m, loc="r", label="Pearson r")
 ```
 
-For small samples, overlay raw jittered points when possible. For very large samples,
-prefer density, hexbin, or rasterization. Use transparency only when the named target
-allows it and the opaque fallback is not active.
-
-## Heatmap
+## 6. Scatter with a size legend + color legend (semantic keys)
 
 ```python
-SHOW_CELL_LABELS = False  # enable only after final-size render QA proves readability
-
-fig, ax = uplt.subplots(journal=JOURNAL)
-ax.heatmap(
-    matrix,
-    cmap="vik",
-    vmin=-1,
-    vmax=1,
-    labels=SHOW_CELL_LABELS,
-    precision=2,
-    labels_kw={"fontsize": "small"},
-    colorbar="r",
-    colorbar_kw={"label": "Correlation"},
-)
-save_publication_fallback(fig, OUTPUT_DIR / "heatmap", dpi=DPI)
+fig, ax = uplt.subplots(journal="nat2")
+ax.scatter(df.x, df.y, c=df.value, s=df.pop, cmap="viko", alpha=0.8)
+ax.numlegend(vmin=df.value.min(), vmax=df.value.max(), n=5, cmap="viko",
+             loc="ur", title="value", frameon=False)
+ax.sizelegend([10, 50, 200], labels=["S", "M", "L"], loc="lr",
+              title="population", frameon=False)
+ax.format(xlabel="x", ylabel="y", grid=False)
 ```
 
-Use the built-in `labels`, `precision`, and `labels_kw` interface instead of a manual
-nested `ax.text(...)` loop. There is no universal matrix-size cutoff. Enable labels
-only when they remain legible and non-overlapping at the measured final physical
-size; otherwise omit them or annotate only selected cells.
+## 7. Distribution: box/violin with shaded percentile bands on a line
 
-## Contour or raster map
+```python
+fig, axs = uplt.subplots(ncols=2, journal="nat2", share=False)
+axs[0].violin(samples, cycle="colorblind")
+axs[0].format(xticklabels=groups)
+# line with mean + shaded IQR straight from raw samples
+axs[1].plot(x, runs, mean=True, shadedata=True, color="rose", lw=2)
+axs.format(abc="a.")
+```
+
+## 8. Map (cartopy) with an anomaly field
 
 ```python
 import cartopy.crs as ccrs
 
-fig, ax = uplt.subplots(proj="robin", journal=JOURNAL)
-ax.contourf(
-    lon,
-    lat,
-    field,
-    levels=uplt.arange(-1, 1, 0.2),
-    cmap="vik",
-    extend="both",
-    transform=ccrs.PlateCarree(),
-    colorbar="b",
-    colorbar_kw={"label": "Anomaly (units)"},
-)
-ax.format(coast=True, lonlines=60, latlines=30)
-save_publication_fallback(fig, OUTPUT_DIR / "map", dpi=DPI)
+fig, ax = uplt.subplots(proj="pcarree", journal="nat2")
+m = ax.pcolormesh(lon, lat, data, cmap="roma", levels=uplt.arange(-4, 4, 0.5),
+                  extend="both", transform=ccrs.PlateCarree())
+ax.format(coast=True, borders=True, grid=True,
+          lonlabels="b", latlabels="l")
+fig.colorbar(m, loc="b", label="anomaly", length=0.6)
 ```
 
-For `pcolormesh`, pass `discrete=False` for a continuous field and prefer
-`shading="auto"`. For global data crossing the dateline, normalize longitudes or add
-a cyclic column before plotting.
-
-## Layout refinement after render check
-
-Only add these after the first render demonstrates a real layout problem:
+## 9. Twin axes (two y-scales, honestly labeled)
 
 ```python
-fig, axs = uplt.subplots(layout, refwidth=2.4, innerpad=1.2)
-# Reason: the first render showed [specific overlap or wasted-space defect].
-# Use hspace/wspace only when the target explicitly requires a fixed physical gap.
+fig, ax = uplt.subplots(journal="nat2")
+ax.plot(x, temp, color="rose", lw=2)
+ax.format(ylabel="temperature (°C)", ycolor="rose", xlabel="day")
+axr = ax.alty(ylabel="precipitation (mm)", ycolor="denim")
+axr.bar(x, precip, color="denim", alpha=0.5)
 ```
 
-After every artist and guide exists, call `fig.canvas.draw()` and run
-`render_qa.audit_figure(...)`. Document the symptom each override fixes, such as
-legend handle/text overlap, overlapping tick labels, or a clipped colorbar title.
-
-## Error band
+## Render check
+Save and open every figure before declaring it done:
 
 ```python
-fig, ax = uplt.subplots(journal=JOURNAL)
-ax.plot(x, mean, color="blue7", label="Mean")
-ax.fill_between(x, lo, hi, color="blue2", label="95% CI")
-ax.legend(loc="b", frame=False)
-ax.format(xlabel="Time", ylabel="Response", grid=True)
-save_publication_fallback(fig, OUTPUT_DIR / "line_ci", dpi=DPI)
+EXPORT_DPI = 1000
+fig.save("figure_check.pdf", dpi=EXPORT_DPI)
+fig.save("figure_check.png", dpi=EXPORT_DPI)
 ```
 
-State whether the band is SD, SEM, CI, percentile interval, bootstrap interval, or
-model uncertainty.
+Inspect both files. For the default `journal="nat2"`, confirm that the PDF media box is 183 mm wide and that no manual spacing override was needed.

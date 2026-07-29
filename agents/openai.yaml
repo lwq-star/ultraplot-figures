@@ -1,4 +1,4 @@
 interface:
   display_name: "UltraPlot Figures"
-  short_description: "Create and check reproducible scientific figures"
-  default_prompt: "Use $ultraplot-figures to create, revise, or inspect a reproducible scientific figure."
+  short_description: "Create and validate publication-ready UltraPlot figures"
+  default_prompt: "Use $ultraplot-figures to create a publication-ready scientific figure and verify its layout and export."
