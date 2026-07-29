@@ -157,12 +157,15 @@ narrowest configuration scope:
    configuration differences from UltraPlot's built-in defaults. It does not
    report figure-local `format()` effects.
 
-Do not replace the effective UltraPlot font family by default. For missing
-glyphs, register a supported font and extend the active generic-family fallback
-list. Treat stylesheets and rc aliases as multi-property changes and verify
-their complete visual effect. If a stylesheet is required, apply it at the
-narrowest practical scope with `ax.format(style="ggplot")` or a bounded rc
-context.
+Apply typography in this order: explicit user requirements, journal or
+publication specifications, active typography entries in `uplt.rc.changed`,
+then the skill default. With no higher-priority setting, use 9 pt sans-serif
+TeX Gyre Heros. UltraPlot 2.5.0 already resolves its built-in defaults this way,
+so do not add redundant overrides. For missing glyphs, extend the active
+generic-family fallback list without replacing its primary entries. Treat
+stylesheets and rc aliases as multi-property changes and verify their complete
+visual effect. If a stylesheet is required, apply it at the narrowest practical
+scope with `ax.format(style="ggplot")` or a bounded rc context.
 
 ## Saving
 UltraPlot 2.5 sets `rc["savefig.dpi"]` to 1000, and `Figure.save()` forwards keyword arguments to matplotlib's `Figure.savefig()`. Skill-generated scripts must nevertheless make the publication export requirement explicit:

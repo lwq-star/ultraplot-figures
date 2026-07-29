@@ -36,8 +36,12 @@ PNG。请说明科学问题和作图目的，并附上已有的版面尺寸、�
 没有指定版面尺寸时，使用 UltraPlot 的 `nat2` 预设，即 183 mm 总宽度。除非另有
 要求，输出 PDF 和 PNG。
 
-没有指定期刊或字体时，本 skill 保留 UltraPlot 当前生效的字体配置。缺少必要字形时，
-仅扩展现有字体回退链，不替换其中的主要字体选择。
+没有指定期刊或字体时，默认使用 9 pt 无衬线 TeX Gyre Heros。它是开源的 Helvetica
+风格字体，在小尺寸图件中较清楚，也便于跨系统复现。它符合许多期刊常见的无衬线
+风格。例如，[Nature 要求图中文字使用无衬线字体，并优先推荐 Helvetica 或 Arial](https://www.nature.com/nature/for-authors/final-submission)。
+
+已有的 `ultraplotrc`、会话级 `uplt.rc` 或活动作用域字体设置视为已经指定字体；用户明确
+要求和目标期刊的现行规范优先于上述默认值。
 
 ### 请求示例
 

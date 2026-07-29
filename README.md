@@ -44,9 +44,15 @@ Output requirements: [optional dimensions, formats, or journal requirements]
 When no figure size is specified, the skill uses UltraPlot's `nat2` preset, which
 is 183 mm wide. It produces PDF and PNG unless another format is requested.
 
-If no journal or font is specified, the skill preserves UltraPlot's effective
-font configuration. When required glyphs are missing, it extends the existing
-fallback chain without replacing its primary font choices.
+If no journal or font is specified, the default is 9 pt sans-serif TeX Gyre
+Heros. It is an open-source Helvetica-style font that remains clear at small
+figure sizes and is easy to reproduce across systems. It matches the sans-serif
+style commonly required by many journals. For example,
+[Nature requires sans-serif figure lettering and prefers Helvetica or Arial](https://www.nature.com/nature/for-authors/final-submission).
+
+Existing typography settings in `ultraplotrc`, session-level `uplt.rc`, or an
+active rc context count as a font specification. Explicit user requirements and
+current target-journal instructions take precedence over this default.
 
 ### Example request
 
