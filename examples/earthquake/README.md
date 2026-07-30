@@ -21,9 +21,13 @@ Both prompts also requested directly runnable Python code and PDF/PNG exports.
 
 ## Figure comparison
 
-| With `ultraplot-figures` | Without skill |
-|:---:|:---:|
-| ![Skill-enabled earthquake figure](with_skill/earthquakes_2025_m5plus_global.png) | ![Skill-disabled earthquake figure](without_skill/earthquakes_2025_m5plus_global.png) |
+### With `ultraplot-figures`
+
+![Skill-enabled earthquake figure](with_skill/earthquakes_2025_m5plus_global.png)
+
+### Without skill
+
+![Skill-disabled earthquake figure](without_skill/earthquakes_2025_m5plus_global.png)
 
 ## Retained files
 

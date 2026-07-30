@@ -36,9 +36,13 @@
 
 ## 图件对比
 
-| 启用 skill | 禁用 skill |
-|:---:|:---:|
-| ![skill 启用组相关性图](with_skill/correlation_scatter.png) | ![skill 禁用组相关性图](without_skill/correlation_scatter_ultraplot.png) |
+### 启用 skill
+
+![skill 启用组相关性图](with_skill/correlation_scatter.png)
+
+### 禁用 skill
+
+![skill 禁用组相关性图](without_skill/correlation_scatter_ultraplot.png)
 
 ## 输出文件
 

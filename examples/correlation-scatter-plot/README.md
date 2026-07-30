@@ -39,9 +39,13 @@ and to provide runnable Python plus PDF and PNG. Only this instruction changed:
 
 ## Figure comparison
 
-| Skill enabled | Skill disabled |
-|:---:|:---:|
-| ![Skill-enabled correlation figure](with_skill/correlation_scatter.png) | ![Skill-disabled correlation figure](without_skill/correlation_scatter_ultraplot.png) |
+### Skill enabled
+
+![Skill-enabled correlation figure](with_skill/correlation_scatter.png)
+
+### Skill disabled
+
+![Skill-disabled correlation figure](without_skill/correlation_scatter_ultraplot.png)
 
 ## Output files
 

@@ -21,9 +21,13 @@
 
 ## 图件对比
 
-| 使用 `ultraplot-figures` | 不使用 skill |
-|:---:|:---:|
-| ![skill 启用地震图](with_skill/earthquakes_2025_m5plus_global.png) | ![skill 禁用地震图](without_skill/earthquakes_2025_m5plus_global.png) |
+### 使用 `ultraplot-figures`
+
+![skill 启用地震图](with_skill/earthquakes_2025_m5plus_global.png)
+
+### 不使用 skill
+
+![skill 禁用地震图](without_skill/earthquakes_2025_m5plus_global.png)
 
 ## 保留文件
 
