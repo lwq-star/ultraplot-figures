@@ -1,0 +1,17 @@
+land_cover,model,source_rows,complete_pairs,missing_value_0,missing_value_1,missing_both,one_sided_missing,internal_missing_before_last_valid_row,first_valid_source_excel_row,last_valid_source_excel_row
+cropland,DNN,4305,3499,806,806,806,0,0,2,3500
+cropland,GBRT,4305,3499,806,806,806,0,0,2,3500
+cropland,LR,4305,3499,806,806,806,0,0,2,3500
+cropland,SVR,4305,3499,806,806,806,0,0,2,3500
+forest,DNN,4305,3965,340,340,340,0,0,2,3966
+forest,GBRT,4305,3965,340,340,340,0,0,2,3966
+forest,LR,4305,3965,340,340,340,0,0,2,3966
+forest,SVR,4305,3965,340,340,340,0,0,2,3966
+grassland,DNN,4305,4221,84,84,84,0,0,2,4222
+grassland,GBRT,4305,4221,84,84,84,0,0,2,4222
+grassland,LR,4305,4221,84,84,84,0,0,2,4222
+grassland,SVR,4305,4221,84,84,84,0,0,2,4222
+savanna,DNN,4305,4305,0,0,0,0,0,2,4306
+savanna,GBRT,4305,4305,0,0,0,0,0,2,4306
+savanna,LR,4305,4305,0,0,0,0,0,2,4306
+savanna,SVR,4305,4305,0,0,0,0,0,2,4306

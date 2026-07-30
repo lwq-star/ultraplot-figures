@@ -2,64 +2,64 @@
 
 # UltraPlot Skill A/B Test: Correlation Scatter Plot
 
-This example compares two independently generated UltraPlot solutions for the same
-correlation-scatter task. The only prompt difference is whether
-`$ultraplot-figures` is explicitly invoked.
+## Experiment provenance
+
+- Each condition was generated in a fresh, projectless Codex task with no
+  inherited conversation history.
+- The four overall tests were run sequentially. Each task had its own directory
+  and input copy and could not read completed sibling runs.
+- The skill-disabled task could not read any skill. The skill-enabled task could
+  read the skill instructions, while the skill `examples/` directory remained
+  inaccessible during generation.
+- Both correlation conditions received byte-identical workbook content. The
+  artifacts were copied into this example only after the isolated runs finished.
+- The controlled prompt factor was whether `$ultraplot-figures` was explicitly
+  invoked.
 
 ## Input data
 
 - Workbook: [multiple_data.xlsx](data/multiple_data.xlsx)
-- Worksheet: `Sheet1`
-- Shape: 4,305 rows × 32 numeric columns
-- Structure: four land-cover classes × four models × paired `_0` and `_1` fields
-- Land-cover classes: `cropland`, `forest`, `grassland`, `savanna`
+- Worksheet and shape: `Sheet1`, 4,305 rows × 32 numeric columns
+- Structure: four land covers × four models × paired `_0` and `_1` fields
+- Land covers: `cropland`, `forest`, `grassland`, `savanna`
 - Models: `DNN`, `GBRT`, `LR`, `SVR`
-- Valid pairs per panel: 3,499, 3,965, 4,221, and 4,305 by land-cover row
-- Total finite pairs shown across the 16 panels: 63,960
-- Units and descriptive variable names are absent from the source and were not invented.
+- Complete pairs per land cover: 3,499, 3,965, 4,221, and 4,305;
+  63,960 finite pairs across all 16 land-cover/model combinations
 
 ## Prompt control
 
-The common task was:
+The common request was to create a publication-ready UltraPlot correlation
+scatter plot comparing `_0` with `_1` for the four models and four land covers,
+and to provide runnable Python plus PDF and PNG. Only this instruction changed:
 
-> Plotting data file: `data/multiple_data.xlsx`
->
-> Create a publication-ready correlation scatter plot comparing `_0` and `_1` for
-> DNN, GBRT, LR, and SVR across cropland, forest, grassland, and savanna.
->
-> Provide directly runnable Python code and export PDF and PNG.
-
-Only the plotting instruction changed:
-
-| Condition | Instruction |
+| Condition | Plotting instruction |
 |---|---|
-| With skill | `Use [$ultraplot-figures](../../SKILL.md) to create the plot.` |
-| Without skill | `Use UltraPlot to create the plot.` |
+| Skill enabled | `Use [$ultraplot-figures](../../SKILL.md) to create the plot.` |
+| Skill disabled | `Use UltraPlot to create the plot.` |
 
 ## Figure comparison
 
-| With `$ultraplot-figures` | Without skill |
+| Skill enabled | Skill disabled |
 |:---:|:---:|
-| ![Correlation scatter plot generated with the skill](with_skill/correlation_scatter_with_skill.png) | ![Correlation scatter plot generated without the skill](without_skill/correlation_scatter.png) |
+| ![Skill-enabled correlation figure](with_skill/correlation_scatter.png) | ![Skill-disabled correlation figure](without_skill/correlation_scatter_ultraplot.png) |
 
 ## Output files
 
-| Type | With `$ultraplot-figures` | Without skill |
+| Artifact | Skill enabled | Skill disabled |
 |---|---|---|
-| Processing script | [prepare_correlation_with_skill.py](with_skill/prepare_correlation_with_skill.py) | Processing occurs in the plotting script |
-| Plotting script | [plot_correlation_with_skill.py](with_skill/plot_correlation_with_skill.py) | [correlation_scatter_ultraplot.py](without_skill/correlation_scatter_ultraplot.py) |
-| PDF | [correlation_scatter_with_skill.pdf](with_skill/correlation_scatter_with_skill.pdf) | [correlation_scatter.pdf](without_skill/correlation_scatter.pdf) |
-| PNG | [correlation_scatter_with_skill.png](with_skill/correlation_scatter_with_skill.png) | [correlation_scatter.png](without_skill/correlation_scatter.png) |
-| Processed paired data | [correlation_pairs_with_skill.csv](with_skill/correlation_pairs_with_skill.csv) | Not written separately |
-| Panel statistics | [correlation_stats_with_skill.csv](with_skill/correlation_stats_with_skill.csv) | [correlation_statistics.csv](without_skill/correlation_statistics.csv) |
-| Data audit | [data_audit_with_skill.json](with_skill/data_audit_with_skill.json) | Printed and asserted by the script |
-| Figure verification | [verification_with_skill.json](with_skill/verification_with_skill.json) | Assertions and console report in the script |
+| Processing | [process_data.py](with_skill/process_data.py) | Included in the plotting script |
+| Plotting | [plot_correlation.py](with_skill/plot_correlation.py) | [plot_correlation_ultraplot.py](without_skill/plot_correlation_ultraplot.py) |
+| PDF | [correlation_scatter.pdf](with_skill/correlation_scatter.pdf) | [correlation_scatter_ultraplot.pdf](without_skill/correlation_scatter_ultraplot.pdf) |
+| PNG | [correlation_scatter.png](with_skill/correlation_scatter.png) | [correlation_scatter_ultraplot.png](without_skill/correlation_scatter_ultraplot.png) |
+| Processed pairs | [processed_pairs.csv](with_skill/processed_pairs.csv) | Not written separately |
+| Statistics | [correlation_statistics.csv](with_skill/correlation_statistics.csv) | Computed in memory by the plotting script |
+| Exclusion summary | [exclusion_summary.csv](with_skill/exclusion_summary.csv) | Not written separately |
 
 ## Objective output information
 
-| Item | With `$ultraplot-figures` | Without skill |
+| Item | Skill enabled | Skill disabled |
 |---|---:|---:|
 | PDF pages | 1 | 1 |
-| PDF page size | 183.000 × 187.977 mm | 191.385 × 185.148 mm |
-| PNG dimensions | 7,204 × 7,400 px | 3,013 × 2,915 px |
+| PDF page size | 182.9996 × 189.8647 mm | 209.5500 × 218.4400 mm |
+| PNG dimensions | 7,204 × 7,474 px | 3,300 × 3,440 px |
 | PNG resolution metadata | 999.998 dpi | 399.999 dpi |

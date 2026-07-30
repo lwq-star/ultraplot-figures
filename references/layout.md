@@ -10,6 +10,7 @@ overlap.
 - Supported model and sizing semantics
 - Reference-subplot preflight
 - Renderer measurements
+- Panel-identifier reserved regions
 - Defect-to-parameter decisions
 
 ## Supported model and sizing semantics
@@ -96,6 +97,95 @@ can include structurally required row or column separation; do not classify all
 of it as fixed-aspect waste. Compare it with the intended alignment, the actual
 inter-row or inter-column spaces, and the decorated-content geometry.
 
+## Panel-identifier reserved regions
+
+For two or more independent main Axes, the figure-local skill policy is
+`abc="a.", abcloc="ul"`. Treat the identifier's rendered bounding box plus a
+small physical clearance as a reserved region. Ordinary annotations have lower
+priority and must move first. Use only public artists and the final renderer:
+
+```python
+from matplotlib.text import Text
+from matplotlib.transforms import Bbox
+
+fig.canvas.draw()
+renderer = fig.canvas.get_renderer()
+
+def visible_text_bbox(text, renderer):
+    """Union the public Text and optional bbox-patch extents."""
+    parts = [text.get_window_extent(renderer)]
+    patch = text.get_bbox_patch()
+    if patch is not None and patch.get_visible():
+        parts.append(patch.get_window_extent(renderer))
+    return Bbox.union(parts)
+
+
+abc_matches = [
+    text for text in ax.findobj(match=Text)
+    if text.get_visible() and text.get_text() == expected_label
+]
+if len(abc_matches) != 1:
+    raise RuntimeError(
+        f"Expected exactly one {expected_label!r} identifier; "
+        f"found {len(abc_matches)}"
+    )
+abc_text = abc_matches[0]
+abc_bbox = visible_text_bbox(abc_text, renderer)
+
+# Two points clears the default 1.5 pt border. Increase this after any
+# explicit border-width or path-effect override.
+clearance_px = 2.0 * fig.dpi / 72.0
+reserved_bbox = Bbox.from_extents(
+    abc_bbox.x0 - clearance_px,
+    abc_bbox.y0 - clearance_px,
+    abc_bbox.x1 + clearance_px,
+    abc_bbox.y1 + clearance_px,
+)
+annotation_bbox = visible_text_bbox(annotation, renderer)
+if reserved_bbox.overlaps(annotation_bbox):
+    raise RuntimeError("Ordinary annotation overlaps the panel identifier")
+```
+
+Store handles to ordinary statistics blocks, equations, sample sizes, and
+callouts so each can be checked directly. Match the expected identifier inside
+each main Axes and require exactly one match. Do not inspect private `_abc_*`
+attributes. Also confirm that the identifier lies inside the upper-left region
+of the visible axes frame and that its bounding box remains inside the canvas.
+
+Repair a collision in this order: choose a consistent non-upper-left location
+for homogeneous small multiples; move or reflow the ordinary annotation without
+losing scientific meaning; then, if fixed placement remains infeasible, use the
+documented solver with the identifier as an explicit obstacle:
+
+```python
+abc_obstacles = [abc_text]
+abc_patch = abc_text.get_bbox_patch()
+if abc_patch is not None and abc_patch.get_visible():
+    abc_obstacles.append(abc_patch)
+
+ax.auto_align_text(
+    annotation,
+    avoid=abc_obstacles,
+    # Exceed the 2 pt validation clearance used above.
+    pad=4.0,
+    avoid_points=False,
+    only_move="x",
+    clip=True,
+)
+fig.canvas.draw()
+```
+
+Pass only lower-priority annotations as movable objects. Never pass `abc_text`
+as a movable object. Make the solver `pad` larger than the validation clearance;
+the example uses 4 points around the movable annotation and verifies against a
+2-point identifier clearance. Use `only_move="xy"` when horizontal movement
+cannot find a valid location, and set `avoid_points=True` only when avoiding
+plotted data is also scientifically required. Re-render and repeat the
+bounding-box checks after every automatic adjustment. `avoid_overlap=True`,
+text borders, backing boxes, z-order, and tight layout do not independently
+protect the identifier. If a decorated movable annotation still overlaps after
+the solver runs, move it explicitly and validate its full visible bbox again.
+
 ## Defect-to-parameter decisions
 
 - For infeasible topology or unreadable frames, revise topology or output format.
@@ -110,6 +200,9 @@ inter-row or inter-column spaces, and the decorated-content geometry.
 - For outer guides, use `space` for fixed separation from the subplot-grid edge
   and `pad` for tight-layout clearance. `panelpad` is the axes-level and stacked
   figure-level guide default; the first figure-level guide uses `innerpad`.
+- For a panel-identifier and ordinary-annotation collision, preserve `abc` in
+  the inner upper-left and move or reflow the ordinary annotation. Do not use
+  `abcpad`, subplot spacing, or z-order to hide the collision.
 
 Outer guides add gridspec rows or columns and do not change main-subplot aspect
 ratios or spacing, but they can increase total figure size. They can amplify

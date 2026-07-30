@@ -1,62 +1,49 @@
-**English** | [简体中文](README_zh.md)
+**English** | [Simplified Chinese](README_zh.md)
 
 # UltraPlot Skill A/B Test: Global M5+ Earthquakes in 2025
-
-This example compares two independently generated UltraPlot solutions for the same
-global-earthquake mapping task. The only prompt difference is whether
-`$ultraplot-figures` is explicitly invoked.
 
 ## Input data
 
 - GeoJSON: [usgs_earthquakes_2025_m5plus.geojson](data/usgs_earthquakes_2025_m5plus.geojson)
-- Source query: USGS FDSN event API, 2025-01-01 through 2026-01-01, minimum magnitude 5
-- Features: 2,129 reviewed 3D Point events
-- Event-time range: 2025-01-01 04:39:18 UTC to 2025-12-31 14:26:57 UTC
-- Magnitude range: 5.0 to 8.8
-- Hypocentral-depth range: 0 to 648.298 km
-- Longitude range: −179.9105° to 179.9604°
-- Latitude range: −65.1723° to 87.0815°
-- Missing longitude, latitude, depth, or magnitude values: 0
+- Source features: 2,129
+- Retained earthquakes: 2,128
+- Explicitly excluded: one feature with `properties.type == "landslide"`
+- Magnitude range: M5.0-M8.8; depth range: 3.0-648.298 km
 
 ## Prompt control
 
-The common task was:
-
-> Plotting data file: `data/usgs_earthquakes_2025_m5plus.geojson`
->
-> Use UltraPlot to show the spatial distribution, magnitude, and depth
-> characteristics of global M5+ earthquakes in 2025, so readers can understand
-> their global pattern and major characteristics directly.
->
-> Provide directly runnable Python code and export PDF and PNG.
-
-Only the plotting instruction changed:
-
-| Condition | Instruction |
+| Condition | Plotting instruction |
 |---|---|
 | With skill | `Use [$ultraplot-figures](../../SKILL.md) for plotting.` |
 | Without skill | `Use UltraPlot for plotting.` |
 
+Both prompts also requested directly runnable Python code and PDF/PNG exports.
+
 ## Figure comparison
 
-| With `$ultraplot-figures` | Without skill |
+| With `ultraplot-figures` | Without skill |
 |:---:|:---:|
-| ![Global earthquake map generated with the skill](with_skill/global_earthquakes_2025_m5plus_with_skill.png) | ![Global earthquake map generated without the skill](without_skill/global_earthquakes_2025_m5plus.png) |
+| ![Skill-enabled earthquake figure](with_skill/earthquakes_2025_m5plus_global.png) | ![Skill-disabled earthquake figure](without_skill/earthquakes_2025_m5plus_global.png) |
 
-## Output files
+## Retained files
 
-| Type | With `$ultraplot-figures` | Without skill |
+| Type | With skill | Without skill |
 |---|---|---|
-| Plotting script | [plot_global_earthquakes_with_skill.py](with_skill/plot_global_earthquakes_with_skill.py) | [plot_global_earthquakes_2025.py](without_skill/plot_global_earthquakes_2025.py) |
-| PDF | [global_earthquakes_2025_m5plus_with_skill.pdf](with_skill/global_earthquakes_2025_m5plus_with_skill.pdf) | [global_earthquakes_2025_m5plus.pdf](without_skill/global_earthquakes_2025_m5plus.pdf) |
-| PNG | [global_earthquakes_2025_m5plus_with_skill.png](with_skill/global_earthquakes_2025_m5plus_with_skill.png) | [global_earthquakes_2025_m5plus.png](without_skill/global_earthquakes_2025_m5plus.png) |
-| Verification | [verification_with_skill.json](with_skill/verification_with_skill.json) | Validation and console report in the script |
+| Processing | [process_earthquakes.py](with_skill/process_earthquakes.py) | Performed in the plotting script |
+| Plotting | [plot_earthquakes.py](with_skill/plot_earthquakes.py) | [plot_earthquakes_2025_ultraplot.py](without_skill/plot_earthquakes_2025_ultraplot.py) |
+| Processed events | [earthquakes_2025_m5plus_processed.csv](with_skill/earthquakes_2025_m5plus_processed.csv) | Not written separately |
+| Magnitude summary | [magnitude_exceedance.csv](with_skill/magnitude_exceedance.csv) | Computed in memory |
+| Depth summary | [depth_classes.csv](with_skill/depth_classes.csv) | Computed in memory |
+| Exclusions | [excluded_features.csv](with_skill/excluded_features.csv) | Counted in memory |
+| PDF | [earthquakes_2025_m5plus_global.pdf](with_skill/earthquakes_2025_m5plus_global.pdf) | [earthquakes_2025_m5plus_global.pdf](without_skill/earthquakes_2025_m5plus_global.pdf) |
+| PNG | [earthquakes_2025_m5plus_global.png](with_skill/earthquakes_2025_m5plus_global.png) | [earthquakes_2025_m5plus_global.png](without_skill/earthquakes_2025_m5plus_global.png) |
 
 ## Objective output information
 
-| Item | With `$ultraplot-figures` | Without skill |
+| Item | With skill | Without skill |
 |---|---:|---:|
 | PDF pages | 1 | 1 |
-| PDF page size | 183.000 × 94.051 mm | 228.600 × 152.400 mm |
-| PNG dimensions | 7,204 × 3,702 px | 2,700 × 1,800 px |
+| PDF page size | 183.000 x 116.638 mm | 406.400 x 254.000 mm |
+| PNG dimensions | 7,204 x 4,592 px | 4,800 x 3,000 px |
 | PNG resolution metadata | 999.998 dpi | 299.999 dpi |
+| Display projection | Plate Carree, central longitude 0 | Robinson, central longitude 150 E |

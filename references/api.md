@@ -5,6 +5,7 @@ Everything below assumes `import ultraplot as uplt`. UltraPlot's axes are `PlotA
 
 - Creating figures and subplots
 - `format()`
+- Panel identifiers and annotation priority
 - Plotting commands
 - Colorbars and legends
 - Panels and insets
@@ -78,7 +79,10 @@ Call on a figure, axes, or subplotgrid; or pass the same kwargs straight into `s
   `rightlabels`.
 - **Subplot-level titles - disabled by default:** `title`, `titleloc`
   (`'l'|'c'|'r'`), and all documented positional title variants.
-- **Panel identifiers:** `abc=True|'a.'|'A.'|'[a]'`, `abcloc='ul'`.
+- **Panel identifiers:** For two or more independent main Axes, this skill uses
+  `abc="a.", abcloc="ul"` as its default figure-local policy unless a direct
+  user or journal instruction requires another style, location, or omission.
+  UltraPlot's built-in defaults remain `abc=False` and `abc.loc='left'`.
 - **Axes/general:** `facecolor`/`fc`, `edgecolor`/`ec`, `linewidth`/`lw`, `grid`,
   `gridminor`.
 - **Cartesian axis labels - preserve when needed:** `xlabel`/`ylabel`,
@@ -92,6 +96,42 @@ Call on a figure, axes, or subplotgrid; or pass the same kwargs straight into `s
   e.g. `abcloc` for `abc.loc`, or `rc_kw={'abc.loc': 'right'}`).
 
 Shorthand aliases are pervasive: `fc`, `ec`, `lw`, `ls`, `c`. Use `uplt.arange(-3, 3)` (inclusive endpoint) for tick lists.
+
+## Panel identifiers and annotation priority
+
+UltraPlot accepts `abc=True`, a template containing `a` or `A`, or an explicit
+sequence. `abc=True` uses the built-in `a` style, while this skill uses `a.`.
+Template labels follow `Axes.number`; regular grids are row-major unless
+`order="F"` is used, and picture-array integers determine the numbers. Beyond
+26, UltraPlot repeats letters as `aa`, `bb`, ..., `zz`, `aaa`, and so on.
+Explicit sequences are assigned one by one to the Axes receiving `format()`.
+UltraPlot 2.5's stable `subplots(order=...)` parameter table reverses the prose
+for `"C"` and `"F"`; its NumPy analogy, a-b-c guide, and installed behavior
+agree that `"C"` is row-major and `"F"` is column-major. Confirm `Axes.number`
+instead of relying on the reversed parameter-table wording.
+
+For required multi-panel identifiers, reserve the inner upper-left region and
+give `abc` higher text-layout priority than ordinary annotations. UltraPlot
+automatically separates a title and `abc` that share a location, with
+`abctitlepad` controlling their separation. It does not automatically separate
+ordinary `Axes.text()` artists from `abc`. Inner identifiers use a white text
+border by default; `abcbbox=True` uses a backing box instead. Borders, boxes,
+and z-order improve contrast but do not repair geometric overlap. When
+measuring decorated text, include both the Text extent and any public bbox-patch
+extent, then add clearance for the configured border or path-effect stroke.
+
+Place ordinary statistics, equations, sample sizes, and callouts in a
+consistent non-upper-left location first. If fixed placement fails, pass only
+the lower-priority annotation objects to `Axes.auto_align_text()` and pass the
+public `abc` Text artist in `avoid=`. `avoid_overlap=True` alone does not make
+the identifier an obstacle. Never pass the identifier as a movable object or
+call `auto_align_text()` without an explicit object list for this repair.
+
+Use `abcpad` only for an independently justified identifier alignment change,
+not to make room for an ordinary annotation. UltraPlot 2.5.0 accepts the public
+`abcpad` format argument, but the documented `rc['abc.pad']` key is absent from
+the stable configuration table and local rc manager; do not depend on reading
+that key.
 
 ## Plotting commands (axes-level)
 **1D / relational:**
