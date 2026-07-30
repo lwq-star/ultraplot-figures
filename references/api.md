@@ -1,6 +1,17 @@
 # UltraPlot API reference (for figure-making)
 Everything below assumes `import ultraplot as uplt`. UltraPlot's axes are `PlotAxes`, a *superset* of matplotlib axes — every mpl method still works, plus the additions here. Feed pandas/xarray objects directly; UltraPlot reads their labels, coordinates, and units for you.
 
+## Contents
+
+- Creating figures and subplots
+- `format()`
+- Plotting commands
+- Colorbars and legends
+- Panels and insets
+- Maps
+- rc and styling
+- Saving
+
 ## Creating figures & subplots
 ```python
 fig, ax  = uplt.subplot(journal="nat2")
@@ -34,10 +45,13 @@ to size a reference subplot instead of the total figure.
 
 ### Geometry
 
-Use `refaspect` to define reference-subplot shape and `hratios` or `wratios`
-to describe intentional row or column proportions. These are semantic geometry
-controls and can be used with `journal`. Let geographic projections and plots
-with fixed data aspect determine their natural aspect when appropriate.
+`refnum` selects the reference subplot and `refaspect` is that subplot's
+width-to-height ratio; the reference subplot may span multiple cells. It is not
+the aspect of the complete figure or of an adjacent row or column composition.
+Use `hratios` and `wratios` for intentional row and column proportions. When the
+reference subplot has a fixed data aspect, normally omit `refaspect` and let
+UltraPlot use its natural aspect. See `references/layout.md` for reference-axis
+selection and renderer-based diagnostics.
 
 ### Advanced spacing overrides
 
@@ -111,6 +125,12 @@ fig.colorbar(m, loc="b", col=1)          # figure-wide, aligned to column 1
 fig.legend(hs, loc="r", rows=(1, 2))     # span specific rows/cols
 ```
 
+Outer guides can increase total figure size even though they do not change main
+subplot aspect ratios. For outer guides, `space` controls fixed separation from
+the subplot-grid edge and `pad` controls tight-layout clearance; `panelpad`
+supplies the axes-level and subsequently stacked figure-level guide default,
+while the first figure-level guide uses `innerpad` by default.
+
 - **On-the-fly:** pass `colorbar='b'` / `legend='ul'` straight to a plot command.
 - **Colorbar from lines/artists or colors:** `ax.colorbar(lines, values=[...])` or `ax.colorbar('Blues', values=range(10))`.
 - **Ticks:** `locator`/`ticks`, `minorlocator`/`minorticks`, `formatter`/ `ticklabels`, `tickloc`. Width/length are in physical units.
@@ -157,15 +177,12 @@ narrowest configuration scope:
    configuration differences from UltraPlot's built-in defaults. It does not
    report figure-local `format()` effects.
 
-Apply typography in this order: explicit user requirements, journal or
-publication specifications, active typography entries in `uplt.rc.changed`,
-then the skill default. With no higher-priority setting, use 9 pt sans-serif
-TeX Gyre Heros. UltraPlot 2.5.0 already resolves its built-in defaults this way,
-so do not add redundant overrides. For missing glyphs, extend the active
-generic-family fallback list without replacing its primary entries. Treat
-stylesheets and rc aliases as multi-property changes and verify their complete
-visual effect. If a stylesheet is required, apply it at the narrowest practical
-scope with `ax.format(style="ggplot")` or a bounded rc context.
+Do not replace the effective UltraPlot font family by default. For missing
+glyphs, register a supported font and extend the active generic-family fallback
+list. Treat stylesheets and rc aliases as multi-property changes and verify
+their complete visual effect. If a stylesheet is required, apply it at the
+narrowest practical scope with `ax.format(style="ggplot")` or a bounded rc
+context.
 
 ## Saving
 UltraPlot 2.5 sets `rc["savefig.dpi"]` to 1000, and `Figure.save()` forwards keyword arguments to matplotlib's `Figure.savefig()`. Skill-generated scripts must nevertheless make the publication export requirement explicit:

@@ -52,14 +52,22 @@ After completing or skipping the release check, apply the mandatory workflow in 
 
 ## Layout gate (before creating the figure)
 
+Read `references/layout.md` before implementing a picture array, a spanning
+subplot, a layout that mixes fixed- and auto-aspect axes, or a figure whose
+width or height is intentionally left for UltraPlot to derive. Also read it
+whenever the first render has unexplained whitespace, misalignment, clipping,
+or overlap.
+
 1. **Identify the layout topology.** Decide which panels occupy ordinary cells, which panels genuinely span rows or columns, and whether any empty slots are required.
 2. **Check layout-topology feasibility.** At the intended physical output width, evaluate the number of panels, row-column arrangement, expected axis aspects, spanning panels, outer guides, and final typography. Identify axes whose data aspect is fixed, including GeoAxes, image axes, and equal-aspect CartesianAxes. Confirm that the proposed topology can provide readable visible axes frames and support the intended comparisons. If it cannot, revise the topology, spans, ratios, guide placement, or output format before writing plotting code. Do not use spacing parameters to rescue an infeasible topology.
 3. **Use regular grids for regular layouts.** Use `nrows` and `ncols` whenever every subplot occupies one ordinary grid cell.
 4. **Use ratios for unequal regular panels.** Add `wratios` or `hratios` when regular columns or rows require unequal sizes. Ratios control geometry, not spacing.
 5. **Reserve picture arrays for genuine complex layouts.** Use a picture array only for real spans, holes, or non-rectangular arrangements. Never repeat a subplot number merely to approximate a width or height ratio. For example, use `ncols=2, wratios=(2, 1)` instead of `[[1, 1, 2]]` for two unequal side-by-side panels.
 6. **Handle mixed axes deliberately.** Start from `share="auto"` in UltraPlot 2.5. Use `share=False, span=False` when GeoAxes and CartesianAxes show unrelated variables or units. Do not use `share=True` to force incompatible geographic and Cartesian axes to share limits or ticks.
-7. **Preserve map geometry.** Keep the geographic projection aspect by default. Do not use `aspect="auto"` simply to fill a GridSpec slot because it distorts the map. Let fixed data aspects participate in UltraPlot's automatic figure-size calculation. The first subplot is the default reference subplot; set `refnum` only when a different subplot should control the derived figure geometry. After rendering, verify the visible axes frames rather than assuming they fill their GridSpec slots.
-8. **Render without manual spacing first.** Do not pass `left`, `right`, `top`, `bottom`, `wspace`, or `hspace` on the first render. Resolve final text coverage and visible labels before evaluating automatic layout.
+7. **Select the sizing reference explicitly.** For every spanning or mixed-aspect layout with an unconstrained figure dimension, identify which subplot should govern that dimension. Treat `refaspect` as the width-to-height ratio of the subplot selected by `refnum`; the reference subplot may itself span cells. It is not the aspect of the complete figure or of an adjacent row or column composition. The first subplot is only the default, not a recommendation. When the intended reference subplot already has a fixed data aspect, normally omit `refaspect` and let UltraPlot use that aspect. Do not make `refnum=1` a universal rule.
+8. **Stay within the supported layout model.** Use one UltraPlot `GridSpec` per figure. Do not propose `GridSpecFromSubplotSpec`, a nested `GridSpec`, or `SubFigure` as a layout repair. Use a valid picture array, `wratios`, `hratios`, panels or insets where semantically appropriate, or revise the topology.
+9. **Preserve map geometry.** Keep the geographic projection aspect by default. Do not use `aspect="auto"` simply to fill a GridSpec slot because it distorts the map. Let fixed data aspects participate in UltraPlot's automatic figure-size calculation. After rendering, verify the visible axes frames rather than assuming they fill their GridSpec slots.
+10. **Render without manual spacing first.** Do not pass `left`, `right`, `top`, `bottom`, `wspace`, or `hspace` on the first render. Resolve final text coverage and visible labels before evaluating automatic layout.
 
 ### Layout geometry diagnosis
 
@@ -71,34 +79,29 @@ Before changing any spacing parameter, compare three geometries with the final r
 
 Measure relevant dimensions and gaps in physical units. Classify apparent whitespace as a true gap between subplot slots, unused space inside a fixed-aspect slot, or clearance required by ticks, labels, titles, legends, and colorbars. `wspace` and `hspace` cannot remove unused space inside a fixed-aspect slot.
 
+For every dominant fixed-aspect main axis, record directional slot utilization
+for width and height. Measure outer guide space separately from main-axes slot
+waste. Do not pass a figure when unexplained slot-internal whitespace forms a
+composition-wide blank band or materially reduces the intended visible panel.
+Numeric thresholds may trigger mandatory review, but they are skill heuristics,
+not UltraPlot API guarantees or universal aesthetic pass criteria.
+
 ### Spacing escalation
 
-Classify the defect before changing layout parameters:
-
-- Infeasible topology or unreadable visible-frame size: revise the topology or output format before changing spacing.
-- Unused space inside a fixed-aspect slot: revise the topology, ratios, or reference subplot; do not use `wspace`, `hspace`, `wpad`, or `hpad`.
-- Misaligned visible frames in a mixed-axes row or column: revise structural geometry before adjusting decorated-content padding.
-- Wrong panel proportions: revise `wratios`, `hratios`, or `refnum`.
-- Overlap between labels, ticks, titles, and adjacent panels: first revise the subplot structure; if the structure is already correct, use the smallest necessary `wpad`, `hpad`, or `innerpad`.
-- A required fixed distance between subplot frames: use `wspace` or `hspace`.
-- Insufficient automatic clearance at the outside of the figure: adjust `outerpad`.
-- An exact subplot-to-figure-edge distance: use `left`, `right`, `top`, or `bottom`.
-- Spacing between an axes and an outer colorbar, legend, or panel: use `panelpad`.
-- Spacing between figure-level row or column labels and a shared spanning axis label: use `leftlabelsharedpad`, `rightlabelsharedpad`, `toplabelsharedpad`, or `bottomlabelsharedpad`.
-
-`left`, `right`, `top`, and `bottom` control outer margins only. They must never be used to repair overlap between neighboring panels. In particular, `left="3em"` can change the left outer margin but cannot prevent the y tick labels of panel b from overlapping the frame of panel a.
-
-### UltraPlot 2.5 layout note
-
-In UltraPlot 2.5.0, a repeated-ID picture layout such as `[[1, 1, 2]]` can underestimate decorated-content clearance on the first layout pass in mixed GeoAxes/Cartesian figures. If the intended structure is a regular unequal two-column layout, replace it with `ncols=2, wratios=(2, 1)`.
-
-Do not use `group=False`, `equal=True`, `ultra_layout=False`, or repeated `fig.auto_layout()` calls as generic overlap repairs. A second explicit `auto_layout()` may be documented as a last-resort version workaround only when the layout genuinely requires a picture array and no correct structural alternative exists.
+Classify the defect before changing layout parameters. Revise topology, output
+format, ratios, or the reference subplot for infeasible geometry, unreadable
+frames, wrong proportions, or fixed-aspect slot waste. Use `wspace` or `hspace`
+only for a required fixed distance between subplot frames, and use tight-layout
+padding only for decorated-content clearance after the structure is correct.
+Use outer-margin parameters only for figure-edge distances. For the complete
+parameter decision table and the UltraPlot 2.5 picture-layout note, follow
+`references/layout.md`.
 
 ## The non-negotiables (check every figure against these)
 1. **Perceptually uniform, colorblind-safe colormaps.** Never `jet`/`rainbow`. Use sequential maps such as `batlow`, `fire`, `dusk`, or `viridis` for magnitude; diverging maps such as `roma` or `vik` for signed data with a meaningful zero; and cyclic maps such as `romaO` or `vikO` for phase or angle.
 2. **Honest encodings.** Don't truncate a bar/area baseline away from a meaningful zero. Center diverging maps on the true neutral value (use `values=`/`levels=` so the midpoint is real, not implied). Preserve spatial geometry using a CRS-aware GeoAxes. Use `aspect="equal"` for projected Cartesian coordinates, but do not treat equal longitude and latitude increments as equal ground distances.
 3. **Default WGS84 geospatial display.** Render geospatial distribution maps with `proj="pcarree"` from display-only EPSG:4326 coordinates and use degree-formatted longitude and latitude axes unless the user explicitly requests another display projection. Preserve the original CRS and use the original or scientifically appropriate projected data for calculations.
-4. **Default-first, scoped styling.** Treat the effective UltraPlot configuration after import as the styling baseline, subject to the typography precedence below. Override it only when required by the user, the scientific encoding, accessibility, or an explicit publication specification. Prefer `Axes.format()` or `Figure.format()` for figure-local changes and `uplt.rc.context()` for a bounded group of figures. Reserve session-global `uplt.rc` changes and persistent `ultraplotrc` changes for explicitly requested cross-figure themes. Treat rc aliases and meta-settings as coupled settings. Read `uplt.rc.changed` (a dictionary property) to audit values that differ from UltraPlot's built-in defaults; it does not audit figure-local visual effects, so verify those in the rendered output. For GeoAxes, make semantic choices such as grid visibility, label sides, locators, and formatters, but inherit the effective gridline and geographic-label appearance by default. Do not pass `gridcolor`, `gridalpha`, `gridlinewidth`, `gridlinestyle`, `labelcolor`, or `gridlabelcolor` unless required by the user, scientific encoding, accessibility, or an explicit publication specification. Do not hard-code UltraPlot's current visual defaults. The explicit `EXPORT_DPI = 1000` publication-output requirement is intentional and is not a visual-style override. Preserve text, tick, coordinate-label, axes, and guide colors and opacity by default. Turn gridlines off when they do not aid interpretation (`grid=False`). No chartjunk, no 3D for 2D data, and no redundant legends when a colorbar already encodes the variable.
+4. **Default-first, scoped styling.** Treat the effective UltraPlot configuration after import as the styling baseline. Override it only when required by the user, the scientific encoding, accessibility, or an explicit publication specification. Prefer `Axes.format()` or `Figure.format()` for figure-local changes and `uplt.rc.context()` for a bounded group of figures. Reserve session-global `uplt.rc` changes and persistent `ultraplotrc` changes for explicitly requested cross-figure themes. Treat rc aliases and meta-settings as coupled settings. Read `uplt.rc.changed` (a dictionary property) to audit values that differ from UltraPlot's built-in defaults; it does not audit figure-local visual effects, so verify those in the rendered output. For GeoAxes, make semantic choices such as grid visibility, label sides, locators, and formatters, but inherit the effective gridline and geographic-label appearance by default. Do not pass `gridcolor`, `gridalpha`, `gridlinewidth`, `gridlinestyle`, `labelcolor`, or `gridlabelcolor` unless required by the user, scientific encoding, accessibility, or an explicit publication specification. Do not hard-code UltraPlot's current visual defaults. The explicit `EXPORT_DPI = 1000` publication-output requirement is intentional and is not a visual-style override. Preserve text, tick, coordinate-label, axes, and guide colors and opacity by default. Turn gridlines off when they do not aid interpretation (`grid=False`). No chartjunk, no 3D for 2D data, and no redundant legends when a colorbar already encodes the variable.
 5. **Do not add figure-level or subplot-level titles by default.** Do not create or retain a visible figure-level or subplot-level title unless the user directly instructs you to display or retain one. Only such a direct instruction authorizes a title; all other wording is non-authorizing. This prohibition covers `suptitle` and its `figtitle` alias, `title`, every documented positional subplot-title variant, and equivalent figure or subplot title setters. Without direct authorization, omit these APIs and remove pre-existing figure-level and subplot-level titles when revising a figure. This prohibition does not apply to axis labels (`xlabel`, `ylabel`), tick labels, geographic coordinate labels, legend titles or labels, colorbar labels or titles, annotations, panel identifiers (`abc`), or figure-edge structural labels. Preserve these when needed to identify variables, units, categories, encodings, or figure structure. Use `abc` only for panel identifiers and use `toplabels`, `bottomlabels`, `leftlabels`, and `rightlabels` only for genuine grid-edge structure. Do not use structural-label APIs to carry descriptive title text. Do not use `autoformat=False` to enforce the no-title rule; `autoformat` controls automatically inferred axis, legend, and colorbar labels, not figure-level or subplot-level titles.
 6. **One consolidated `format()` per coherent group.** Use `ax.format(...)`, `axs.format(...)`, or `fig.format(...)` instead of scattered matplotlib setters. Mixed GeoAxes and CartesianAxes may require separate consolidated calls because they accept different formatting keywords. Apply `lonlabels` and `latlabels` only to GeoAxes.
 7. **Structure-first automatic layout.** Follow the mandatory Layout gate. Use automatic layout, compatible axis sharing, spanning labels where scientifically appropriate, and outer colorbars or legends. Do not use `bbox_to_anchor`, `subplots_adjust()`, or `bbox_inches="tight"`.
@@ -107,11 +110,7 @@ Do not use `group=False`, `equal=True`, `ultra_layout=False`, or repeated `fig.a
 
 ## Typography before layout
 
-Apply typography in this order: (1) explicit user instructions, (2) current journal or publication specifications, (3) active typography settings that differ from UltraPlot's built-in defaults, and (4) the skill default. Treat active typography entries in `uplt.rc.changed`, including settings loaded from `ultraplotrc`, as an existing font specification even when the prompt does not repeat them.
-
-When none of the first three applies, use 9 pt sans-serif TeX Gyre Heros. UltraPlot 2.5.0 already provides this baseline: `font.name` is `sans-serif`, `font.sans-serif` begins with the bundled TeX Gyre Heros, and `font.size` is 9 pt. Do not add redundant rc overrides when the effective configuration already resolves to this baseline. If another UltraPlot version does not resolve to this baseline, apply the skill default with the narrowest appropriate scope before creating the figure.
-
-After selecting the typography source, preserve its font-family order, sizes, weights, styles, colors, and opacity. Do not replace the primary font merely to impose a house style or obtain missing glyphs.
+Preserve the effective UltraPlot font configuration by default. Do not replace `font.name`, `font.family`, the primary family order, font sizes, weights, styles, colors, or opacity merely to impose a house style or obtain missing glyphs.
 
 When the active font stack lacks required glyphs, register a font in a format supported by UltraPlot and extend the appropriate generic-family fallback list without reordering or replacing its existing primary entries. Select fallback fonts by writing system and output requirements; for Chinese text, use an available Song/Ming-style fallback when requested. Prefer `.ttf` or `.otf` files for publication output. Do not rely on `.ttc` collections, which UltraPlot intentionally ignores because they are unreliable for PDF export.
 
@@ -152,12 +151,10 @@ fig, axs = uplt.subplots(
 map_ax, chart_ax = axs
 ```
 
-Select `refnum` explicitly only when the intended reference subplot is not the first subplot.
-
 Steps every time:
 0. **Plan the scientific message and data flow.** Apply the Scientific plotting gate in this file. Read a reference only when extra detail is needed. If preprocessing is required, write the processing script and save the processed data before writing the plotting script.
 1. **Choose and preflight the layout structure.** Apply the Layout gate before creating the figure.
-2. **Resolve typography and physical size.** Apply the typography precedence above, confirm the selected base size and resolved primary family before figure creation, register only the fallbacks required for missing glyph coverage, select exactly one figure-width authority, and let UltraPlot derive any unconstrained dimension.
+2. **Resolve text coverage and physical size.** Preserve UltraPlot's effective typography, register only the fallbacks required for missing glyph coverage before figure creation, select exactly one figure-width authority, and let UltraPlot derive any unconstrained dimension.
 3. **Pick the plot commands.** Use axes-level UltraPlot commands and feed pandas or xarray objects directly when appropriate.
 4. **Choose color.** Match the colormap or cycle type to the data type.
 5. **Annotate and format.** Unless directly requested, keep figure-level and subplot-level title-producing arguments and methods out of the plotting code. Preserve scientifically necessary axis labels, guide labels, annotations, panel identifiers, and structural labels. Interpret a `title` argument by the receiving API: legend and colorbar title aliases are guide labels, not figure-level or subplot-level titles. Use consolidated `format()` calls for coherent axes groups and outer guides where appropriate.
@@ -188,18 +185,6 @@ Steps every time:
 - Treating a GeoAxes grid-style keyword as line-only or changing it by habit; preserve the effective defaults and verify gridlines and geographic labels separately after any justified override.
 - Replacing the primary font family to solve missing-glyph coverage instead of extending the active fallback chain.
 - Applying a stylesheet without auditing its typography, axes, tick, grid, and guide changes.
-- Using a repeated-ID picture array as a substitute for `wratios` or `hratios`.
-- Using `left`, `right`, `top`, or `bottom` to repair overlap between panels.
-- Treating `wratios` or `hratios` as spacing rather than panel geometry.
-- Using `wspace` before determining whether the defect is decorated-content overlap.
-- Using spacing parameters to repair an infeasible panel topology.
-- Treating unused space inside a fixed-aspect slot as `wspace` or `hspace`.
-- Evaluating alignment from GridSpec slots without inspecting visible axes frames.
-- Increasing one canvas dimension when the relevant fixed-aspect panels are constrained by the other dimension.
-- Sizing an outer guide from slots that are much larger than the associated visible axes frames.
-- Using `aspect="auto"` to align a map without accepting geographic distortion.
-- Using `group=False`, `equal=True`, or `ultra_layout=False` as generic overlap-repair switches.
-- Calling a second `fig.auto_layout()` before testing the correct regular-grid structure.
 - Registering or rebinding fonts after automatic layout has measured text.
 - Fighting axis sharing: if shared limits/ticks are wrong for the data, pass `share=False`/`span=False` rather than overriding subplot-by-subplot.
 - Approximating `journal="nat2"` with values such as `180mm` or `7.15in`; UltraPlot defines `nat2` as exactly 183 mm.
@@ -237,8 +222,11 @@ Evaluate GridSpec slots, visible axes frames, and decorated content. A positive 
 - panel letters are positioned consistently relative to the visible axes frames;
 - the physical width and height of every visible main axes frame are recorded and readable at the intended output size;
 - GridSpec-slot and visible-frame dimensions are compared for fixed-aspect axes;
+- directional slot utilization is recorded for every dominant fixed-aspect main axis;
+- every material slot-to-frame discrepancy is structurally corrected or explicitly justified by the declared layout intent;
 - apparent frame-to-frame gaps are measured rather than inferred from slot spacing;
 - visible axes frames align as intended in mixed GeoAxes/Cartesian layouts;
+- outer guides are measured and classified separately from fixed-aspect main-axes slot waste;
 - outer guides are proportionate to the visible axes they describe;
 - no layout parameter is being used for a different semantic purpose;
 - the saved PDF retains the requested physical width;
@@ -250,7 +238,10 @@ Evaluate GridSpec slots, visible axes frames, and decorated content. A positive 
 - geospatial figures use EPSG:4326/WGS84 with degree-formatted longitude and latitude axes unless another projection was explicitly requested;
 - the displayed extent matches the study area, north-south orientation is correct, boundaries align with the raster, and NoData regions are rendered as intended.
 
-Do not issue a publication-quality pass based only on canvas containment, non-overlap, and successful file export.
+Do not issue a publication-quality pass based only on canvas containment,
+non-overlap, and successful file export. Unexplained fixed-aspect slot waste that
+creates a composition-wide blank band or materially shrinks a dominant panel is
+a blocking layout failure.
 
 For `journal="nat2"`, verify that the saved PDF media box is 183 mm wide (about 7.2047 in or 518.74 pt; tolerance 0.2 mm). Do not rely only on the size requested in code.
 
@@ -270,6 +261,7 @@ fig.save("figure_check.png", dpi=EXPORT_DPI)
 ## Optional reference files (load only when needed)
 
 - Read `references/scientific-principles.md` only when the scientific question, preprocessing boundary, or deliverable contract needs more detail.
+- Read `references/layout.md` for every picture array, spanning subplot, mixed fixed/auto-aspect layout, unconstrained figure dimension, or unexplained whitespace, misalignment, clipping, or overlap.
 - Read `references/geospatial.md` only for detailed CRS, raster, vector, or GeoAxes implementation guidance.
 - Read `references/api.md` only for unfamiliar commands or parameter details.
 - Read `references/color.md` only for advanced colormap construction or perceptual diagnostics.
