@@ -50,10 +50,6 @@ figure sizes and is easy to reproduce across systems. It matches the sans-serif
 style commonly required by many journals. For example,
 [Nature requires sans-serif figure lettering and prefers Helvetica or Arial](https://www.nature.com/nature/for-authors/final-submission).
 
-Existing typography settings in `ultraplotrc`, session-level `uplt.rc`, or an
-active rc context count as a font specification. Explicit user requirements and
-current target-journal instructions take precedence over this default.
-
 ### Example request
 
 ```text
@@ -119,8 +115,7 @@ content and file information. It cannot reconstruct missing data, processing,
 statistical methods, or reproducible code from a rendered figure.
 
 The skill produces static Python figures, not interactive dashboards or web
-applications. Some UltraPlot features require additional dependencies. Explicit
-user requirements and current journal instructions take precedence over defaults.
+applications, and does not support generating flowcharts.
 
 ## Examples
 
@@ -132,8 +127,6 @@ user requirements and current journal instructions take precedence over defaults
   uses the same Excel data and prompt to compare LR, SVR, GBRT, and DNN across
   four land types. The case includes input data, editable scripts, PDF and PNG
   outputs, preview images, and verification information.
-
-These cases illustrate the workflow and are not performance benchmarks.
 
 ## Feedback and contact
 
@@ -155,10 +148,10 @@ This skill is built around the open-source
 maintainers and contributors for developing and sharing the plotting library on
 which this workflow is based.
 
-Version 1.0 was comprehensively rewritten and tested in response to suggestions
-and feedback from the UltraPlot maintainer, reflected in
-[cvanelteren/ultraplot-figures](https://github.com/cvanelteren/ultraplot-figures).
-We are grateful for this expert guidance and support.
+Following suggestions and feedback from the UltraPlot maintainer in
+[cvanelteren/ultraplot-figures](https://github.com/cvanelteren/ultraplot-figures),
+the skill was comprehensively rewritten and tested, further improving the
+workflow. We are grateful for the maintainer's expert guidance and support.
 
 We also thank the [LINUX DO](https://linux.do/) community and platform for its
 technical exchange, feedback, and support.

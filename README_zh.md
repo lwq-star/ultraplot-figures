@@ -40,9 +40,6 @@ PNG。请说明科学问题和作图目的，并附上已有的版面尺寸、�
 风格字体，在小尺寸图件中较清楚，也便于跨系统复现。它符合许多期刊常见的无衬线
 风格。例如，[Nature 要求图中文字使用无衬线字体，并优先推荐 Helvetica 或 Arial](https://www.nature.com/nature/for-authors/final-submission)。
 
-已有的 `ultraplotrc`、会话级 `uplt.rc` 或活动作用域字体设置视为已经指定字体；用户明确
-要求和目标期刊的现行规范优先于上述默认值。
-
 ### 请求示例
 
 ```text
@@ -100,8 +97,8 @@ conda install -c conda-forge ultraplot
 只有 PDF 或栅格图片时，本 skill 只能检查可见内容和文件信息，不能从成图还原未提供
 的数据、处理流程、统计方法或可复现代码。
 
-本 skill 默认制作 Python 静态图件，不用于交互式 dashboard 或网页应用。部分
-UltraPlot 功能需要额外依赖。用户明确提出的要求和目标期刊的现行规范优先于默认值。
+本 skill 默认制作 Python 静态图件，不用于交互式 dashboard 或网页应用，也不支持
+生成流程图。
 
 ## 示例
 
@@ -111,8 +108,6 @@ UltraPlot 功能需要额外依赖。用户明确提出的要求和目标期刊�
 - [预测值与真实值模型对照案例](examples/correlation-scatter-plot/README_zh.md)：
   使用相同 Excel 数据和提示词，对比 LR、SVR、GBRT 和 DNN 在四种地类下的图件。
   案例包含输入数据、可编辑脚本、PDF、PNG、预览图及核验信息。
-
-这些案例用于说明工作方式，不作为效果基准测试。
 
 ## 反馈与联系
 
@@ -132,8 +127,8 @@ UltraPlot 功能需要额外依赖。用户明确提出的要求和目标期刊�
 
 根据 UltraPlot 维护者在
 [cvanelteren/ultraplot-figures](https://github.com/cvanelteren/ultraplot-figures)
-中提出的建议与反馈，我们对 1.0 版本进行了全面重写和测试。感谢维护者提供的专业
-指导与支持。
+中提出的建议与反馈，我们对其进行了全面重写和测试，进一步完善了工作流。感谢维护者
+提供的专业指导与支持。
 
 感谢 [LINUX DO](https://linux.do/) 社区与平台提供的技术交流、反馈与支持。
 
