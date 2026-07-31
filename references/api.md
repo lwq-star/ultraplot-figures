@@ -56,11 +56,22 @@ selection and renderer-based diagnostics.
 
 ### Advanced spacing overrides
 
-Do not pass `wspace`, `hspace`, `left`, `right`, `top`, `bottom`, `pad`, or
-`panelpad` on the first render. UltraPlot's tight layout calculates margins and
-inter-subplot spacing from the rendered artists. A manual value overrides the
-corresponding automatic spacing. Add only the smallest necessary override after
-inspecting a failed automatic-layout render, and document the defect and fix.
+Keep UltraPlot's own tight layout active. For complex layouts, pass `tight=True`
+or confirm that the effective `rc["subplots.tight"]` is `True`. On the first
+render with final content, do not pass `left`, `right`, `top`, `bottom`, `space`,
+`wspace`, `hspace`, `outerpad`, `innerpad`, `panelpad`, `wpad`, or `hpad` to the
+figure or GridSpec. When `journal=` or `figwidth=` fixes the total width, also
+leave the height unconstrained unless an exact height is required.
+
+UltraPlot's tight layout calculates margins and inter-subplot spacing from the
+rendered artists. A manual value partially overrides the corresponding automatic
+result. Add only the smallest necessary override after inspecting a failed
+automatic render, document the defect and fix, and leave unaffected sequence
+entries as `None`. Prefer `outerpad`, `innerpad`, `panelpad`, `wpad`, or `hpad`
+for clearance; use `left`, `right`, `top`, `bottom`, `wspace`, or `hspace` only
+when an exact axes-edge distance is required. Do not combine UltraPlot auto
+layout with Matplotlib `tight_layout()`, `constrained_layout`, or
+`subplots_adjust()`.
 
 **SubplotGrid** (`axs`) is list- and array-indexable and broadcasts methods:
 `axs[0]`, `axs[:, 0]` (first column), `axs[1, 1:]`, `axs.format(...)` applies to
@@ -156,6 +167,10 @@ On legend calls, `title` and `label` name the legend. On colorbar calls,
 `label` and `title` name the colorbar. These are guide labels, not figure-level
 or subplot-level titles, and the default no-title rule does not disable them.
 
+Use an axes-level guide when one Axes owns the encoding. Use a figure-level
+guide only when the encoding is genuinely shared by multiple Axes. Do not choose
+the figure-level form merely to standardize code structure.
+
 **Locations** (`loc`/`location`): outer side = `'l'`, `'r'`, `'t'`, `'b'`; inset =`'ul'`, `'ur'`, `'ll'`, `'lr'`, or full words (`'upper right'`). Outer guides allocate a new gridspec row/column — they don't steal subplot space or distort aspect ratios. Multiple guides on one side stack.
 
 ```python
@@ -181,7 +196,7 @@ while the first figure-level guide uses `innerpad` by default.
 **Semantic legends** (describe an *encoding*, no exemplar artist needed):
 `ax.catlegend(names, colors={...}, markers={...})`,
 `ax.sizelegend([10, 50, 200], labels=[...])`,
-`ax.numlegend(vmin=0, vmax=1, n=5, cmap='viko')`,
+`ax.numlegend(vmin=0, vmax=1, n=5, cmap='batlow')`,
 `ax.entrylegend([{...}, {...}])`, `ax.geolegend([...])`. All exist on `fig` too
 and accept `add=False` to return `(handles, labels)` for composition.
 

@@ -1,4 +1,0 @@
-class_name,range_label,lower_bound_km,upper_bound_km,event_count,event_percent,median_depth_km
-Shallow,0 to <70 km,0.0,70.0,1821,85.57330827067669,10.0
-Intermediate,70 to <300 km,70.0,300.0,252,11.842105263157894,108.0435
-Deep,>=300 km,300.0,,55,2.584586466165413,532.691

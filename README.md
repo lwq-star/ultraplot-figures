@@ -44,19 +44,24 @@ Output requirements: [optional dimensions, formats, or journal requirements]
 When no figure size is specified, the skill uses UltraPlot's `nat2` preset, which
 is 183 mm wide. It produces PDF and PNG unless another format is requested.
 
-If no journal or font is specified, the default is 9 pt sans-serif TeX Gyre
-Heros. It is an open-source Helvetica-style font that remains clear at small
-figure sizes and is easy to reproduce across systems. It matches the sans-serif
-style commonly required by many journals. For example,
+If no journal or font is specified, UltraPlot defaults to 9 pt sans-serif TeX
+Gyre Heros. It is an open-source Helvetica-style font that remains clear at
+small figure sizes and is easy to reproduce across systems. It matches the
+sans-serif style commonly required by many journals. For example,
 [Nature requires sans-serif figure lettering and prefers Helvetica or Arial](https://www.nature.com/nature/for-authors/final-submission).
+
+For Chinese text, the skill retains TeX Gyre Heros as the primary Latin font and
+uses `Microsoft YaHei` (`微软雅黑`) as the default Chinese fallback. Microsoft
+YaHei is a sans-serif Chinese font that covers common Simplified Chinese glyphs
+and remains clear and legible at the small sizes used in scientific figures.
 
 ### Example request
 
 ```text
 Use $ultraplot-figures with results.csv. Compare the treatment groups with the
 control over time, including uncertainty. The figure should show the trends and
-differences between groups. Return the plotting script, PDF, PNG, and verification
-notes.
+differences between groups. Return the maintainable plotting script, PDF, and
+PNG, and summarize material verification issues in the response.
 ```
 
 ## Installation
@@ -101,16 +106,17 @@ this check. Set `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` to disable it.
 
 ## Deliverables and limits
 
-When data or plotting source is available, Codex returns, as needed:
+When data or plotting source is available, Codex retains only, as needed:
 
-- an independently runnable, editable Python plotting script;
-- a separate processing script and processed data when substantive processing is
-  required;
-- PDF and PNG files at the requested dimensions;
+- concise, independently runnable, editable plotting code;
+- preprocessing code and only the final processed data used by the figure when
+  substantive preprocessing is required;
+- the requested final figure files, defaulting to PDF and PNG when unspecified.
 
-Codex does not return standalone verification notes, manifests, diagnostic
-renders, logs, or other check-only files unless explicitly requested. Material
-assumptions and unresolved issues are summarized in the final response.
+Codex performs verification internally. It does not retain verification code,
+notes, manifests, diagnostic renders, logs, intermediate data, exclusion tables,
+or other check-only files. Material assumptions and unresolved issues are
+summarized in the final response.
 
 When the only input is a PDF or raster image, the skill can inspect only visible
 content and file information. It cannot reconstruct missing data, processing,

@@ -5,9 +5,9 @@ The single most common way scientific figures mislead is bad color. Get the map 
 
 | Data | Map type | Good UltraPlot choices |
 |------|----------|------------------------|
-| Magnitude, 0→max, no meaningful zero split | **Sequential** | `batlow`, `viko`, `fire`, `dusk`, `ice`, `boreal`, `marine`, `Blues`, `viridis`, `magma` |
+| Magnitude, 0→max, no meaningful zero split | **Sequential** | `batlow`, `fire`, `dusk`, `ice`, `boreal`, `marine`, `Blues`, `viridis`, `magma` |
 | Signed / anomaly with a meaningful zero | **Diverging** | `Div`, `roma`, `vik`, `BuRd`, `RdBu` |
-| Phase, angle, longitude, time-of-day | **Cyclic** | `romaO`, `twilight`, or build with `cyclic=True` |
+| Phase, angle, longitude, time-of-day | **Cyclic** | `romaO`, `vikO`, `twilight`, or build with `cyclic=True` |
 | Distinct lines/bars/categories | **Qualitative cycle** | `538`, `ggplot`, `colorblind`, `qual1`, `Set3`, `bmh` |
 
 Rules:
@@ -18,7 +18,7 @@ Rules:
   symmetric `levels=` so the midpoint color sits at true zero, e.g.
   `levels=uplt.arange(-10, 10, 2)`.
 - Prefer the perceptually uniform families (`PerceptualColormap`s and Fabio
-  Crameri's scientific colour maps `batlow`/`roma`/`vik`/`viko`/`romaO`), which
+  Crameri's scientific colour maps `batlow`/`roma`/`vik`/`vikO`/`romaO`), which
   are colorblind-safe and grayscale-safe by construction.
 
 ## Verify perceptual uniformity
@@ -78,9 +78,11 @@ ax.contourf(data, cmap="Div", cmap_kw={"cut": 0.2}, levels=uplt.arange(-10, 10, 
 Cycles are `DiscreteColormap`s turned into property cyclers for distinct elements (lines, bars).
 
 ```python
-uplt.rc.cycle = "colorblind"                 # set globally
 ax.plot(data, cycle="538")                   # per-call
 ax.plot(data, cycle="Blues", cycle_kw={"left": 0.2})  # sample a continuous map
+
+with uplt.rc.context(cycle="colorblind"):    # bounded figure series
+    ax.plot(data)
 
 # From colors / merged maps / a count
 uplt.Cycle("blues", "reds", "oranges", 15, left=0.1)   # 15 colors

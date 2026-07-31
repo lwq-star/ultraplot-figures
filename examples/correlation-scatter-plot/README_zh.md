@@ -48,18 +48,15 @@
 
 | 产物 | 启用 skill | 禁用 skill |
 |---|---|---|
-| 数据处理 | [process_data.py](with_skill/process_data.py) | 位于绘图脚本内 |
-| 绘图 | [plot_correlation.py](with_skill/plot_correlation.py) | [plot_correlation_ultraplot.py](without_skill/plot_correlation_ultraplot.py) |
+| 分析与绘图 | [correlation_scatter.py](with_skill/correlation_scatter.py) | [correlation_scatter_ultraplot.py](without_skill/correlation_scatter_ultraplot.py) |
 | PDF | [correlation_scatter.pdf](with_skill/correlation_scatter.pdf) | [correlation_scatter_ultraplot.pdf](without_skill/correlation_scatter_ultraplot.pdf) |
 | PNG | [correlation_scatter.png](with_skill/correlation_scatter.png) | [correlation_scatter_ultraplot.png](without_skill/correlation_scatter_ultraplot.png) |
-| 处理后配对数据 | [processed_pairs.csv](with_skill/processed_pairs.csv) | 不单独写出 |
-| 统计量 | [correlation_statistics.csv](with_skill/correlation_statistics.csv) | 由绘图脚本在内存中计算 |
 
 ## 客观输出信息
 
 | 项目 | 启用 skill | 禁用 skill |
 |---|---:|---:|
 | PDF 页数 | 1 | 1 |
-| PDF 页面尺寸 | 182.9996 × 189.8647 mm | 209.5500 × 218.4400 mm |
-| PNG 像素尺寸 | 7,204 × 7,474 px | 3,300 × 3,440 px |
-| PNG 分辨率元数据 | 999.998 dpi | 399.999 dpi |
+| PDF 页面尺寸 | 182.9996 × 184.9787 mm | 191.7302 × 194.5358 mm |
+| PNG 像素尺寸 | 7,204 × 7,282 px | 4,529 × 4,595 px |
+| PNG 分辨率元数据 | 999.998 dpi | 599.999 dpi |

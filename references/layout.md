@@ -1,215 +1,185 @@
-# UltraPlot layout and geometry diagnostics
+# UltraPlot layout decisions and diagnostics
 
-Read this reference for picture arrays, spanning subplots, mixed fixed- and
-auto-aspect axes, a figure with one unconstrained dimension, outer guides in a
-complex layout, or any unexplained whitespace, misalignment, clipping, or
-overlap.
+This reference guides agent-side reasoning. Any renderer measurements or
+diagnostic snippets used while applying it are temporary QA and must not be
+copied into delivered plotting or preprocessing scripts.
+
+Read it for picture arrays, spanning subplots, mixed fixed- and auto-aspect axes,
+an unconstrained figure dimension, complex outer guides, or unexplained
+whitespace, misalignment, clipping, or overlap.
 
 ## Contents
 
-- Supported model and sizing semantics
-- Reference-subplot preflight
-- Renderer measurements
-- Panel-identifier reserved regions
+- Topology and supported model
+- Default tight-layout contract
+- Sizing reference
+- Axis sharing and guides
+- Geometry diagnosis
+- Panel-identifier clearance
 - Defect-to-parameter decisions
 
-## Supported model and sizing semantics
+## Topology and supported model
 
+- Use `nrows` and `ncols` when each subplot occupies one ordinary grid cell.
+- Use `wratios` and `hratios` for unequal regular columns or rows. Ratios control
+  geometry, not spacing.
+- Use a picture array only for genuine spans, holes, or non-rectangular topology;
+  `0` denotes an empty slot. Do not repeat an identifier merely to imitate a
+  regular-grid ratio.
 - Use one UltraPlot `GridSpec` per figure. UltraPlot 2.5 does not officially
-  support `GridSpecFromSubplotSpec`, nested gridspecs, or `SubFigure`.
-- Use `nrows` and `ncols` for regular grids. Use a picture array only for real
-  spans, holes, or non-rectangular topology; `0` denotes an empty slot.
-- Treat `refnum` as the subplot number that controls reference sizing. The first
-  subplot is the default, not a preferred universal choice.
-- Treat `refaspect` as reference-subplot width divided by height. The reference
-  subplot may span cells. Do not interpret it as the complete-figure aspect or
-  the aspect of an adjacent row or column composition.
-- When only one of `figwidth` and `figheight`, or one of `refwidth` and
-  `refheight`, is specified, let UltraPlot derive the other dimension from the
-  reference subplot and gridspec geometry. When both dimensions are fixed,
-  `refaspect` does not control canvas sizing.
-- Remember that `journal="nat2"` fixes the figure width at 183 mm but leaves
-  height to automatic derivation.
-- When the reference subplot has a fixed data aspect, as with GeoAxes or image
-  axes, normally omit `refaspect` so UltraPlot can use that aspect. Set it only
-  when a different reference geometry is intentional.
-- Use the canonical names `refnum`, `refaspect`, `refwidth`, `refheight`,
-  `figwidth`, and `figheight`. Avoid competing size authorities.
+  support nested gridspecs, `GridSpecFromSubplotSpec`, or `SubFigure`.
+- Revise the topology when the intended comparison cannot remain readable at the
+  required physical size. Spacing cannot repair an infeasible topology.
 
-## Reference-subplot preflight
-
-1. Declare the intended geometry: which visible-frame edges should align, which
-   panel is dominant, the minimum readable physical frame sizes, and whether any
-   blank slot or band is intentional.
-2. Identify every fixed-aspect axis and its true row or column span after data
-   limits or geographic extent are applied.
-3. Choose the subplot whose intended visible geometry should govern the
-   unconstrained canvas dimension. Do not choose by subplot order.
-4. Omit `refaspect` when that reference subplot already has the intended fixed
-   data aspect. If the reference is auto-aspect, set `refaspect` only from an
-   explicit design requirement.
-5. Render with the actual axes types, extents, typography, labels, and guides.
-   Compare plausible `refnum` candidates when the correct authority is unclear.
-
-For `[[1, 2], [1, 3]]`, subplot 1 spans both rows while subplots 2 and 3 each
-occupy one row. If subplot 1 is a dominant fixed-aspect map, `refnum=2` with an
-explicit `refaspect` sizes one right-hand subplot, not the combined right-hand
-composition. Use subplot 1 as the reference when its complete span should govern
-height, then tune `hratios` only if the two right-hand panels need unequal
-heights. This is a contextual choice, not a universal `refnum=1` rule.
-
-## Renderer measurements
-
-Use only public APIs and the final renderer:
+For two unequal side-by-side panels, prefer:
 
 ```python
-fig.canvas.draw()
-renderer = fig.canvas.get_renderer()
-fig_w, fig_h = map(float, fig.get_size_inches())
-
-for name, ax in main_axes.items():
-    slot = ax.get_subplotspec().get_position(fig)
-    frame = ax.get_position()
-    tight = ax.get_tightbbox(renderer).transformed(
-        fig.dpi_scale_trans.inverted()
-    )
-    slot_w, slot_h = float(slot.width * fig_w), float(slot.height * fig_h)
-    frame_w, frame_h = float(frame.width * fig_w), float(frame.height * fig_h)
-    metrics = {
-        "slot_in": (slot_w, slot_h),
-        "frame_in": (frame_w, frame_h),
-        "tight_in": (tight.width, tight.height),
-        "unused_width_fraction": max(0.0, 1.0 - frame_w / slot_w),
-        "unused_height_fraction": max(0.0, 1.0 - frame_h / slot_h),
-    }
-    print(name, metrics)
+fig, axs = uplt.subplots(ncols=2, wratios=(2, 1), journal="nat2")
 ```
 
-Keep outer-guide axes out of `main_axes` and measure them separately. Also check
-pairwise decorated-bbox overlap, canvas containment, visible-frame alignment,
-and the union of decorated content against the canvas edges. Treat numerical
-thresholds only as configurable review triggers. Decide pass or failure from the
-declared layout intent and physical readability.
-
-For a subplot that spans rows or columns, its allocated `SubplotSpec` slot
-includes the intervening gridspec spaces. Therefore the reported unused fraction
-can include structurally required row or column separation; do not classify all
-of it as fixed-aspect waste. Compare it with the intended alignment, the actual
-inter-row or inter-column spaces, and the decorated-content geometry.
-
-## Panel-identifier reserved regions
-
-For two or more independent main Axes, the figure-local skill policy is
-`abc="a.", abcloc="ul"`. Treat the identifier's rendered bounding box plus a
-small physical clearance as a reserved region. Ordinary annotations have lower
-priority and must move first. Use only public artists and the final renderer:
+For a subplot spanning two rows beside two stacked subplots, keep the genuine
+row span and express the width difference with `wratios`:
 
 ```python
-from matplotlib.text import Text
-from matplotlib.transforms import Bbox
-
-fig.canvas.draw()
-renderer = fig.canvas.get_renderer()
-
-def visible_text_bbox(text, renderer):
-    """Union the public Text and optional bbox-patch extents."""
-    parts = [text.get_window_extent(renderer)]
-    patch = text.get_bbox_patch()
-    if patch is not None and patch.get_visible():
-        parts.append(patch.get_window_extent(renderer))
-    return Bbox.union(parts)
-
-
-abc_matches = [
-    text for text in ax.findobj(match=Text)
-    if text.get_visible() and text.get_text() == expected_label
-]
-if len(abc_matches) != 1:
-    raise RuntimeError(
-        f"Expected exactly one {expected_label!r} identifier; "
-        f"found {len(abc_matches)}"
-    )
-abc_text = abc_matches[0]
-abc_bbox = visible_text_bbox(abc_text, renderer)
-
-# Two points clears the default 1.5 pt border. Increase this after any
-# explicit border-width or path-effect override.
-clearance_px = 2.0 * fig.dpi / 72.0
-reserved_bbox = Bbox.from_extents(
-    abc_bbox.x0 - clearance_px,
-    abc_bbox.y0 - clearance_px,
-    abc_bbox.x1 + clearance_px,
-    abc_bbox.y1 + clearance_px,
+# Prefer
+fig, axs = uplt.subplots(
+    [[1, 2],
+     [1, 3]],
+    wratios=(2, 1.1),
 )
-annotation_bbox = visible_text_bbox(annotation, renderer)
-if reserved_bbox.overlaps(annotation_bbox):
-    raise RuntimeError("Ordinary annotation overlaps the panel identifier")
-```
 
-Store handles to ordinary statistics blocks, equations, sample sizes, and
-callouts so each can be checked directly. Match the expected identifier inside
-each main Axes and require exactly one match. Do not inspect private `_abc_*`
-attributes. Also confirm that the identifier lies inside the upper-left region
-of the visible axes frame and that its bounding box remains inside the canvas.
-
-Repair a collision in this order: choose a consistent non-upper-left location
-for homogeneous small multiples; move or reflow the ordinary annotation without
-losing scientific meaning; then, if fixed placement remains infeasible, use the
-documented solver with the identifier as an explicit obstacle:
-
-```python
-abc_obstacles = [abc_text]
-abc_patch = abc_text.get_bbox_patch()
-if abc_patch is not None and abc_patch.get_visible():
-    abc_obstacles.append(abc_patch)
-
-ax.auto_align_text(
-    annotation,
-    avoid=abc_obstacles,
-    # Exceed the 2 pt validation clearance used above.
-    pad=4.0,
-    avoid_points=False,
-    only_move="x",
-    clip=True,
+# Avoid: the duplicate first two columns only imitate extra width
+fig, axs = uplt.subplots(
+    [[1, 1, 2],
+     [1, 1, 3]],
+    wratios=(1, 1, 1.1),
 )
-fig.canvas.draw()
 ```
 
-Pass only lower-priority annotations as movable objects. Never pass `abc_text`
-as a movable object. Make the solver `pad` larger than the validation clearance;
-the example uses 4 points around the movable annotation and verifies against a
-2-point identifier clearance. Use `only_move="xy"` when horizontal movement
-cannot find a valid location, and set `avoid_points=True` only when avoiding
-plotted data is also scientifically required. Re-render and repeat the
-bounding-box checks after every automatic adjustment. `avoid_overlap=True`,
-text borders, backing boxes, z-order, and tight layout do not independently
-protect the identifier. If a decorated movable annotation still overlaps after
-the solver runs, move it explicitly and validate its full visible bbox again.
+## Default tight-layout contract
+
+- Keep UltraPlot's own tight layout active with `tight=True`, or confirm that
+  the effective `rc["subplots.tight"]` is `True`.
+- The first render must include final axes types, limits or extents, typography,
+  labels, annotations, identifiers, and guides while leaving all subplot and
+  GridSpec margin, spacing, and padding arguments unset.
+- Do not use Matplotlib `tight_layout()`, `constrained_layout`, or
+  `subplots_adjust()` alongside UltraPlot auto layout.
+- Explicit spacing is a supported partial override, not a default design tool.
+  Retain one only after the automatic render exposes a specific defect, and
+  leave unaffected sequence entries as `None`.
+- Fixed margins and spaces cannot repair an infeasible topology, a wrong sizing
+  reference, unsuitable row or column ratios, fixed-aspect slot waste, or an
+  ordinary-annotation collision.
+
+## Sizing reference
+
+- `refnum` selects the subplot that governs an unconstrained canvas dimension.
+  The first subplot is the default, not a universal recommendation.
+- `refaspect` is the selected subplot's width-to-height ratio, not the complete
+  figure aspect or the aspect of a neighboring row or column composition.
+- When a reference subplot has a fixed data aspect, normally omit `refaspect` so
+  UltraPlot can use the actual aspect after limits or extent are known.
+- When only one total figure dimension is fixed, let UltraPlot derive the other
+  from the reference subplot and GridSpec geometry.
+- `journal="nat2"` fixes total width at 183 mm and leaves height for automatic
+  derivation. Do not combine it with a competing `figwidth` or `refwidth`.
+- Unless an exact height is required, do not combine a width-fixing `journal=`
+  or `figwidth=` with `figheight=`, `figsize=`, or `set_size_inches()`. Some
+  journal presets may themselves constitute an explicit fixed-size requirement.
+
+For `[[1, 2], [1, 3]]`, subplot 1 spans both rows. If it is the dominant fixed-
+aspect map, use it as the sizing reference when its complete visible geometry
+should govern height. Choosing subplot 2 instead sizes one right-hand panel, not
+the combined right-hand composition.
+
+## Axis sharing and guides
+
+- Start from `share="auto"`. Use `share=False, span=False` when geographic and
+  Cartesian axes, or any axes with unrelated variables or units, should not share
+  limits, ticks, or spanning labels.
+- Use `ax.colorbar()` or `ax.legend()` when one Axes owns the guide.
+- Use `fig.colorbar()` or `fig.legend()` only for a guide genuinely shared by
+  multiple Axes. Figure-level guides can span selected rows or columns.
+- Outer guides allocate GridSpec rows or columns and may increase total figure
+  size. They do not directly change a main Axes data aspect.
+- Avoid `bbox_to_anchor`. Use UltraPlot guide locations and layout allocation.
+
+## Diagnose rendered geometry
+
+Use the complete first render defined by the default tight-layout contract.
+
+When a defect appears, distinguish:
+
+1. the allocated GridSpec slot from
+   `ax.get_subplotspec().get_position(fig)`;
+2. the visible axes frame from `ax.get_position()`;
+3. the decorated boundary from `ax.get_tightbbox(renderer)`.
+
+Inspect these geometries with the final renderer in temporary task code or an
+internal validation tool. Do not return measurement functions, bbox records, or
+diagnostic dictionaries as reproduction code.
+
+Classify apparent whitespace as:
+
+- a true gap between subplot slots;
+- unused space inside a fixed-aspect slot;
+- decorated-content clearance for ticks, labels, identifiers, or guides;
+- an outer margin.
+
+`wspace` and `hspace` cannot remove unused area created when a fixed-aspect axes
+occupies only part of its slot. For spanning axes, remember that the allocated
+slot includes intervening GridSpec spaces, so a slot-to-frame difference is not
+automatically waste.
+
+Use numerical thresholds only as review triggers. Judge the layout from the
+declared comparison, physical readability, and composition rather than treating
+a heuristic threshold as an UltraPlot guarantee.
+
+## Panel-identifier clearance
+
+For two or more independent main Axes, use `abc="a.", abcloc="ul"` unless the
+user or journal specifies otherwise. Count only independent main Axes; exclude
+colorbars, legend-only axes, helper axes, and non-independent insets.
+
+Reserve the rendered identifier region plus modest clearance. Place ordinary
+statistics, equations, sample sizes, callouts, legends, and insets elsewhere.
+For homogeneous small multiples, prefer one consistent non-upper-left annotation
+location.
+
+If a collision occurs:
+
+1. preserve the identifier and its upper-left location;
+2. move, shorten, or reflow the ordinary annotation;
+3. use `auto_align_text()` only when fixed placement remains infeasible, passing
+   only lower-priority annotations as movable objects and the public identifier
+   artist as an obstacle;
+4. render again and inspect the result internally.
+
+Do not use `abcpad`, z-order, a border, backing box, or tight layout to conceal a
+geometric collision. Do not include identifier-discovery or bbox-overlap code in
+the delivered plotting script.
 
 ## Defect-to-parameter decisions
 
-- For infeasible topology or unreadable frames, revise topology or output format.
-- For fixed-aspect slot waste, revise topology, `wratios`, `hratios`, or the
-  reference subplot. Do not use spacing or padding to hide it.
-- For wrong panel proportions, revise ratios or the intended sizing reference.
-- For a required fixed frame-to-frame distance, use `wspace` or `hspace`.
-- For decorated-content clearance, use the smallest necessary `wpad`, `hpad`,
-  or `innerpad` only after structural geometry is correct.
-- For automatic figure-edge clearance, use `outerpad`; for an exact edge
-  distance, use `left`, `right`, `top`, or `bottom`.
-- For outer guides, use `space` for fixed separation from the subplot-grid edge
-  and `pad` for tight-layout clearance. `panelpad` is the axes-level and stacked
-  figure-level guide default; the first figure-level guide uses `innerpad`.
-- For a panel-identifier and ordinary-annotation collision, preserve `abc` in
-  the inner upper-left and move or reflow the ordinary annotation. Do not use
-  `abcpad`, subplot spacing, or z-order to hide the collision.
+Choose repairs in this order: correct topology, ratios, and `refnum`; correct
+ordinary annotation placement; correct guide ownership or placement; then tune
+automatic padding. Use a fixed axes-edge space only when an exact distance is
+actually required, and use a fixed outer margin only when that exact physical
+margin is itself a requirement.
 
-Outer guides add gridspec rows or columns and do not change main-subplot aspect
-ratios or spacing, but they can increase total figure size. They can amplify
-visual imbalance without causing fixed-aspect slot waste.
+| Observed defect | Correct response |
+|---|---|
+| Infeasible topology or unreadable frames | Revise topology or output format |
+| Fixed-aspect slot waste | Revise topology, ratios, or sizing reference |
+| Wrong panel proportions | Revise `wratios`, `hratios`, or `refnum` |
+| Unnecessarily fixed width and height | Remove `figheight`, `figsize`, or manual resizing and let UltraPlot derive the open dimension |
+| Required fixed frame-to-frame distance | Use the smallest local `wspace` or `hspace`; leave unaffected entries as `None` |
+| Decorated-content clearance | Use minimal `wpad`, `hpad`, or `innerpad` after structure is correct |
+| Figure-edge distance | Use `outerpad` for automatic clearance or an edge margin for an exact distance |
+| Outer-guide separation | Use guide `space` or `pad` according to UltraPlot semantics |
+| Identifier/annotation collision | Move or reflow the lower-priority annotation |
 
-In UltraPlot 2.5.0, replace a repeated-ID picture array used only to imitate an
-unequal regular grid with `nrows`, `ncols`, and ratios. Do not use `group=False`,
-`equal=True`, `ultra_layout=False`, repeated `auto_layout()`, or `aspect="auto"`
-as generic repairs. Preserve a genuine picture array when a real span or hole is
-required, and diagnose its rendered geometry directly.
+Do not use `group=False`, `equal=True`, `ultra_layout=False`, repeated
+`auto_layout()`, or `aspect="auto"` as generic repairs. Keep only the final
+layout choices and concise rationale required to reproduce the figure.

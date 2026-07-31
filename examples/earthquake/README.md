@@ -23,31 +23,26 @@ Both prompts also requested directly runnable Python code and PDF/PNG exports.
 
 ### With `ultraplot-figures`
 
-![Skill-enabled earthquake figure](with_skill/earthquakes_2025_m5plus_global.png)
+![Skill-enabled earthquake figure](with_skill/global_earthquakes_2025_m5plus.png)
 
 ### Without skill
 
-![Skill-disabled earthquake figure](without_skill/earthquakes_2025_m5plus_global.png)
+![Skill-disabled earthquake figure](without_skill/global_earthquakes_2025_m5plus.png)
 
 ## Retained files
 
 | Type | With skill | Without skill |
 |---|---|---|
-| Processing | [process_earthquakes.py](with_skill/process_earthquakes.py) | Performed in the plotting script |
-| Plotting | [plot_earthquakes.py](with_skill/plot_earthquakes.py) | [plot_earthquakes_2025_ultraplot.py](without_skill/plot_earthquakes_2025_ultraplot.py) |
-| Processed events | [earthquakes_2025_m5plus_processed.csv](with_skill/earthquakes_2025_m5plus_processed.csv) | Not written separately |
-| Magnitude summary | [magnitude_exceedance.csv](with_skill/magnitude_exceedance.csv) | Computed in memory |
-| Depth summary | [depth_classes.csv](with_skill/depth_classes.csv) | Computed in memory |
-| Exclusions | [excluded_features.csv](with_skill/excluded_features.csv) | Counted in memory |
-| PDF | [earthquakes_2025_m5plus_global.pdf](with_skill/earthquakes_2025_m5plus_global.pdf) | [earthquakes_2025_m5plus_global.pdf](without_skill/earthquakes_2025_m5plus_global.pdf) |
-| PNG | [earthquakes_2025_m5plus_global.png](with_skill/earthquakes_2025_m5plus_global.png) | [earthquakes_2025_m5plus_global.png](without_skill/earthquakes_2025_m5plus_global.png) |
+| Analysis and plotting | [plot_global_earthquakes.py](with_skill/plot_global_earthquakes.py) | [plot_global_earthquakes_2025.py](without_skill/plot_global_earthquakes_2025.py) |
+| PDF | [global_earthquakes_2025_m5plus.pdf](with_skill/global_earthquakes_2025_m5plus.pdf) | [global_earthquakes_2025_m5plus.pdf](without_skill/global_earthquakes_2025_m5plus.pdf) |
+| PNG | [global_earthquakes_2025_m5plus.png](with_skill/global_earthquakes_2025_m5plus.png) | [global_earthquakes_2025_m5plus.png](without_skill/global_earthquakes_2025_m5plus.png) |
 
 ## Objective output information
 
 | Item | With skill | Without skill |
 |---|---:|---:|
 | PDF pages | 1 | 1 |
-| PDF page size | 183.000 x 116.638 mm | 406.400 x 254.000 mm |
-| PNG dimensions | 7,204 x 4,592 px | 4,800 x 3,000 px |
+| PDF page size | 182.9996 x 116.6052 mm | 348.3003 x 194.2059 mm |
+| PNG dimensions | 7,204 x 4,590 px | 4,113 x 2,293 px |
 | PNG resolution metadata | 999.998 dpi | 299.999 dpi |
-| Display projection | Plate Carree, central longitude 0 | Robinson, central longitude 150 E |
+| Display projection | Plate Carree, central longitude 0 | Robinson, central longitude 0 |

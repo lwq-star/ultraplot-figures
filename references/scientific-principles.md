@@ -1,84 +1,95 @@
-# Scientific plotting principles
+# Scientific question and data-flow boundaries
 
-Use this checklist before writing plotting code. The purpose is to keep the figure tied to the research question and to make every data transformation reproducible.
+Read this reference only when the scientific question, preprocessing boundary,
+or design of the final processed data is unclear. The retained-file allowlist in
+`SKILL.md` remains authoritative.
 
-## 1. Clarify the figure's purpose
+## Clarify the figure
 
-Before choosing a chart, state:
+Before choosing a chart, establish:
 
-- **Scientific question:** What comparison, relationship, pattern, or mechanism is being investigated?
-- **Intended message:** What should the reader be able to see or compare after viewing the figure?
-- **Evidence:** Which variables, units, groups, observation units, and sample sizes support that message?
-- **Output context:** Which journal or medium, column format, final file format, and physical width apply?
+- the comparison, relationship, pattern, or mechanism being examined;
+- the observation unit and the variables, units, groups, and sample supporting
+  the comparison;
+- the one message the reader should be able to see;
+- the requested output context and physical size.
 
-Do not begin from a preferred chart type. Begin from the scientific question and the comparison the reader must make.
+A useful brief is:
 
-A useful one-sentence brief is:
+> Show **[variable or estimate]** across **[groups, time, or space]** so the
+> reader can evaluate **[scientific comparison]**.
 
-> Show **[variable or estimate]** across **[groups, time, or space]** so the reader can evaluate **[scientific comparison]**.
+Keep this brief in working context. Do not create a report, manifest, or audit
+object merely to record it.
 
-## 2. Define the output size
+## Inspect the input
 
-Use one width authority. Honor an explicitly requested journal preset first, or an explicitly requested total physical figure width second. If neither is supplied, use UltraPlot's `journal="nat2"` default for this skill (Nature two-column, 183 mm). Do not infer a different journal, approximate a preset with a nearby manual width, or combine `journal` with a competing `figwidth` or `refwidth`.
+Confirm column meanings, units, observation level, missing values, duplicates,
+ranges, grouping, pairing or repeated measurements, and transformations already
+applied. Do not silently remove observations, aggregate replicates, normalize
+values, or calculate inferential results for plotting convenience.
 
-Keep the sizing authority, expected physical width, final format, and exact-dimension requirement in the necessary plotting code or final response. Do not create a separate sizing note. `refaspect` may still describe subplot geometry without competing with the total-width authority.
+For geospatial inputs, also confirm source CRS, coordinate units, bounds,
+transform, resolution, orientation, and NoData metadata as applicable. Never
+infer WGS84 from coordinate appearance or absent metadata.
 
-## 3. Inspect the data before plotting
+## Decide whether preprocessing is substantive
 
-Check the available files and confirm column meanings, units, missing values, duplicates, ranges, grouping, pairing or repeated measurements, and any transformations already applied. Do not silently remove observations, aggregate replicates, normalize values, or compute statistics merely to make plotting easier.
+Use a preprocessing script when an operation changes the analytical sample,
+observation unit, scientific value, or result. Typical examples are:
 
-For geospatial figures, also confirm the source CRS, coordinate units, bounds, affine transform, resolution, grid orientation, and NoData definition. Never infer WGS84 from coordinate appearance or missing CRS metadata.
+- removing or imputing invalid observations;
+- applying analytical inclusion or exclusion criteria;
+- joining multiple sources;
+- aggregating to a new observation level;
+- normalization, calibration, or scientific unit transformation;
+- deriving scientific variables or classifications;
+- model fitting, hypothesis tests, uncertainty, confidence intervals, or other
+  inferential results;
+- spatial transformations used by measurements, comparison, or statistics.
 
-## 4. Decide whether data processing is required
+Keep a transformation in the plotting script when it is transparent,
+display-only, and easiest to understand beside the plot call. Examples include:
 
-Create a separate data-processing stage when the task requires substantive operations such as:
+- selecting a display range or group explicitly requested by the user;
+- category and draw order;
+- a small reshape required only by the plotting API;
+- label formatting, bar positions, axis limits, and marker sizes;
+- simple counts, minima, maxima, medians, or quantiles calculated from the exact
+  rows being plotted and used only as display annotations;
+- an in-memory EPSG:4326 representation used only for display.
 
-- cleaning invalid or missing records;
-- filtering observations;
-- joining multiple data sources;
-- reshaping data for analysis;
-- aggregating repeated measurements;
-- normalization or transformation;
-- deriving variables;
-- computing statistics, estimates, or uncertainty intervals.
+The presence of a pandas, xarray, NumPy, or GeoPandas operation does not by itself
+require a preprocessing script. Separate the stage when the operation needs
+methodological explanation, changes scientific interpretation, or should be
+reused by multiple figures.
 
-Simple display-only choices such as label wording, category order, marker style, or axis formatting can remain in the plotting script.
+## Assign validation ownership
 
-For geospatial figures, an EPSG:4326 transformation created only for final display may remain in the plotting script. It is a plotting-preparation artifact, not a processed scientific dataset. Any transformed grid used for measurement, comparison, or statistics must be created in the processing stage.
+Validate an assumption once at the stage that owns it:
 
-## 5. Keep processing and plotting separate
+| Stage | Owns |
+|---|---|
+| Preprocessing | Raw schema, units, CRS, sample-changing filters, joins, analytical transformations, fitted results, and uncertainty |
+| Plotting | Required final columns, non-empty inputs, finite plotted values, keys or ordering needed to map values to marks and labels |
+| Internal QA | Renderer geometry, overlaps, identifiers, font rendering, PDF/PNG size and resolution, and retained-file inspection |
 
-When processing is required, use two scripts:
+The plotting script should not recompute a regression, summary table, class
+assignment, or exclusion audit merely to confirm the preprocessing output.
+Conversely, the preprocessing script should not contain figure geometry or file
+export checks.
 
-- `process_data.py`: reads the raw input, validates and transforms it, and writes only the processed datasets required by the plotting script. It should not create the final figure.
-- `plot_figure.py`: reads the processed datasets and creates the figure. It should not contain hidden cleaning, aggregation, normalization, or statistical analysis.
+## Design final processed outputs
 
-When multiple figures are requested, use one independently runnable plotting entry script for each scientifically distinct figure. A single parameterized entry script may generate several figures only when their layout, scientific meaning, and processing logic are the same and they differ only by inputs, regions, years, labels, or similarly simple parameters. Keep rendering code in the entry script by default. Add a helper module only when the delivered workflow imports it and it materially reduces necessary duplication.
+Write only final processed datasets semantically consumed by the figure. Prefer
+one coherent dataset when values share an observation grain. Keep separate
+datasets when they represent genuinely different grains and combining them would
+obscure meaning.
 
-Write only the final processed datasets that the plotting scripts read, using an appropriate format such as CSV, Parquet, NetCDF, or another format suited to the data. Keep validation-only tables and intermediate results in memory unless the user explicitly requests them. Use explicit input and output paths, deterministic operations, and fixed random seeds where randomness is unavoidable.
+Every persisted field should affect the figure. Keep validation-only tables and
+rejected-row details in memory. Report concise counts through stdout when useful;
+do not retain another file.
 
-A typical delivery structure is:
-
-```text
-process_data.py
-plot_figure.py
-processed_data.csv
-figure.pdf
-figure.png
-```
-
-Use names and formats appropriate to the task; the separation of responsibilities is the important requirement.
-
-## 6. Required deliverables
-
-When preprocessing is required, provide only the processing code, plotting code, processed datasets directly read by the plotting code, and the final vector and PNG figures.
-
-When preprocessing is not required, do not create an empty processing script or processed-data placeholder. Provide only the plotting code and final vector and PNG figures.
-
-Do not create standalone notes, manifests, audit tables, or verification reports. Put reproduction-critical assumptions and transformations in the necessary code or metadata embedded in an already required processed dataset, and summarize material information in the final response. For multiple figures, describe the figure-to-script mapping in the final response instead of creating a manifest file.
-
-Keep validation-only values and tables in memory unless the user explicitly requests them or the final plotting code directly reads them. Apply the formal-deliverables policy in `SKILL.md` to every handoff.
-
-## 7. Verify the scientific message
-
-Before delivery, render and inspect both the final vector output and the final PNG output. Confirm that the chosen encoding supports the intended comparison, axes and units are clear, transformations and uncertainty are labeled, colors are consistent with the variable type, and the figure remains legible at its intended size. Check the saved PDF media box rather than trusting only the size requested in code. For `journal="nat2"`, the PDF must be 183 mm wide within 0.2 mm. Do not use `bbox_inches="tight"`, because post-render cropping can change the physical page size. The final figure should answer the stated scientific question without relying on undocumented processing or layout overrides.
+Use explicit paths, deterministic operations, and a fixed random seed when
+randomness is scientifically unavoidable. The final plotting script must read
+the final processed results rather than repeat their substantive processing.

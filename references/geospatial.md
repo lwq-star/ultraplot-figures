@@ -31,6 +31,11 @@ calculations.
 A display-only CRS conversion may remain in the plotting script. A CRS
 transformation used by scientific analysis belongs in the processing script.
 
+The preprocessing stage owns source CRS, coordinate, filter, and analytical
+transformation validation. The plotting stage should check only the final fields
+and coordinate invariants needed to render the map. Do not repeat complete source
+provenance or analytical checks in the plotting script.
+
 ## 3. Plot with UltraPlot
 
 Create a geographic axes using `proj="pcarree"`. Plot EPSG:4326 coordinates
@@ -49,7 +54,7 @@ m = ax.pcolormesh(
     cmap="batlow",
 )
 ax.format(lonlabels="b", latlabels="l", grid=True)
-fig.colorbar(m, loc="r", label="value")
+ax.colorbar(m, loc="r", label="value")
 ```
 
 `grid=True` or `grid=False` controls whether geographic gridlines are shown.

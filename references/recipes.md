@@ -26,7 +26,7 @@ axs.format(abc="a.", abcloc="ul",
 fig, axs = uplt.subplots(ncols=2, journal="nat2")
 for ax, field in zip(axs, fields):
     m = ax.pcolormesh(lon, lat, field, cmap="batlow", levels=11, extend="both")
-axs.format(abc="a.", xlabel="x", ylabel="y")
+axs.format(abc="a.", abcloc="ul", xlabel="x", ylabel="y")
 fig.colorbar(m, loc="b", label="T (K)", length=0.7)   # one bar for the row
 ```
 
@@ -51,8 +51,8 @@ ax.colorbar(m, loc="r", label="Pearson r")
 
 ```python
 fig, ax = uplt.subplots(journal="nat2")
-ax.scatter(df.x, df.y, c=df.value, s=df.pop, cmap="viko", alpha=0.8)
-ax.numlegend(vmin=df.value.min(), vmax=df.value.max(), n=5, cmap="viko",
+ax.scatter(df.x, df.y, c=df.value, s=df.pop, cmap="batlow", alpha=0.8)
+ax.numlegend(vmin=df.value.min(), vmax=df.value.max(), n=5, cmap="batlow",
              loc="ur", title="value", frameon=False)
 ax.sizelegend([10, 50, 200], labels=["S", "M", "L"], loc="lr",
               title="population", frameon=False)
@@ -67,7 +67,7 @@ axs[0].violin(samples, cycle="colorblind")
 axs[0].format(xticklabels=groups)
 # line with mean + shaded IQR straight from raw samples
 axs[1].plot(x, runs, mean=True, shadedata=True, color="rose", lw=2)
-axs.format(abc="a.")
+axs.format(abc="a.", abcloc="ul")
 ```
 
 ## 8. Map (cartopy) with an anomaly field
@@ -80,7 +80,7 @@ m = ax.pcolormesh(lon, lat, data, cmap="roma", levels=uplt.arange(-4, 4, 0.5),
                   extend="both", transform=ccrs.PlateCarree())
 ax.format(coast=True, borders=True, grid=True,
           lonlabels="b", latlabels="l")
-fig.colorbar(m, loc="b", label="anomaly", length=0.6)
+ax.colorbar(m, loc="b", label="anomaly", length=0.6)
 ```
 
 ## 9. Twin axes (two y-scales, honestly labeled)
@@ -102,4 +102,7 @@ fig.save("figure.pdf", dpi=EXPORT_DPI)
 fig.save("figure.png", dpi=EXPORT_DPI)
 ```
 
-Replace `figure` with the task's final basename and re-render corrections to the same paths. Do not create separate check, draft, or test copies. Inspect both final files. For the default `journal="nat2"`, confirm that the PDF media box is 183 mm wide and that no manual spacing override was needed.
+Replace `figure` with the task's final basename and re-render corrections to the
+same paths. Do not create separate check, draft, or test copies. Inspect both
+final files internally. Keep output-file and geometry validation code out of the
+delivered plotting script.

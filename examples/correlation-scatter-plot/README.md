@@ -51,18 +51,15 @@ and to provide runnable Python plus PDF and PNG. Only this instruction changed:
 
 | Artifact | Skill enabled | Skill disabled |
 |---|---|---|
-| Processing | [process_data.py](with_skill/process_data.py) | Included in the plotting script |
-| Plotting | [plot_correlation.py](with_skill/plot_correlation.py) | [plot_correlation_ultraplot.py](without_skill/plot_correlation_ultraplot.py) |
+| Analysis and plotting | [correlation_scatter.py](with_skill/correlation_scatter.py) | [correlation_scatter_ultraplot.py](without_skill/correlation_scatter_ultraplot.py) |
 | PDF | [correlation_scatter.pdf](with_skill/correlation_scatter.pdf) | [correlation_scatter_ultraplot.pdf](without_skill/correlation_scatter_ultraplot.pdf) |
 | PNG | [correlation_scatter.png](with_skill/correlation_scatter.png) | [correlation_scatter_ultraplot.png](without_skill/correlation_scatter_ultraplot.png) |
-| Processed pairs | [processed_pairs.csv](with_skill/processed_pairs.csv) | Not written separately |
-| Statistics | [correlation_statistics.csv](with_skill/correlation_statistics.csv) | Computed in memory by the plotting script |
 
 ## Objective output information
 
 | Item | Skill enabled | Skill disabled |
 |---|---:|---:|
 | PDF pages | 1 | 1 |
-| PDF page size | 182.9996 × 189.8647 mm | 209.5500 × 218.4400 mm |
-| PNG dimensions | 7,204 × 7,474 px | 3,300 × 3,440 px |
-| PNG resolution metadata | 999.998 dpi | 399.999 dpi |
+| PDF page size | 182.9996 × 184.9787 mm | 191.7302 × 194.5358 mm |
+| PNG dimensions | 7,204 × 7,282 px | 4,529 × 4,595 px |
+| PNG resolution metadata | 999.998 dpi | 599.999 dpi |
