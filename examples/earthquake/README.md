@@ -12,12 +12,27 @@
 
 ## Prompt control
 
+The prompt text below is restored from repository history. The input file is
+shown using its repository-relative path to avoid exposing machine-specific
+information. The full effective prompt for each condition consists of its
+condition-specific instruction plus the common task below.
+
+The common task was:
+
+> Plotting data file: `data/usgs_earthquakes_2025_m5plus.geojson`
+>
+> Use UltraPlot to show the spatial distribution, magnitude, and depth
+> characteristics of global M5+ earthquakes in 2025, so readers can understand
+> their global pattern and major characteristics directly.
+>
+> Provide directly runnable Python code and export PDF and PNG.
+
+Only the plotting instruction changed:
+
 | Condition | Plotting instruction |
 |---|---|
 | With skill | `Use [$ultraplot-figures](../../SKILL.md) for plotting.` |
 | Without skill | `Use UltraPlot for plotting.` |
-
-Both prompts also requested directly runnable Python code and PDF/PNG exports.
 
 ## Figure comparison
 

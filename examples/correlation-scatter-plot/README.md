@@ -28,9 +28,21 @@
 
 ## Prompt control
 
-The common request was to create a publication-ready UltraPlot correlation
-scatter plot comparing `_0` with `_1` for the four models and four land covers,
-and to provide runnable Python plus PDF and PNG. Only this instruction changed:
+The prompt text below is restored from repository history. The input file is
+shown using its repository-relative path to avoid exposing machine-specific
+information. The full effective prompt for each condition consists of its
+condition-specific instruction plus the common task below.
+
+The common task was:
+
+> Plotting data file: `data/multiple_data.xlsx`
+>
+> Create a publication-ready correlation scatter plot comparing `_0` and `_1`
+> for DNN, GBRT, LR, and SVR across cropland, forest, grassland, and savanna.
+>
+> Provide directly runnable Python code and export PDF and PNG.
+
+Only the plotting instruction changed:
 
 | Condition | Plotting instruction |
 |---|---|
