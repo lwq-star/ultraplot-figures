@@ -107,8 +107,10 @@ When data or plotting source is available, Codex returns, as needed:
 - a separate processing script and processed data when substantive processing is
   required;
 - PDF and PNG files at the requested dimensions;
-- verification notes covering key assumptions, data processing, output dimensions,
-  and unresolved issues.
+
+Codex does not return standalone verification notes, manifests, diagnostic
+renders, logs, or other check-only files unless explicitly requested. Material
+assumptions and unresolved issues are summarized in the final response.
 
 When the only input is a PDF or raster image, the skill can inspect only visible
 content and file information. It cannot reconstruct missing data, processing,
@@ -121,12 +123,12 @@ applications, and does not support generating flowcharts.
 
 - [2025 global M5+ earthquake skill comparison](examples/earthquake/README.md):
   uses the same data and prompt to generate figures with and without
-  `$ultraplot-figures`. The case includes input data, editable scripts, PDF and
-  PNG outputs, preview images, and file information.
+  `$ultraplot-figures`. The case includes input data, necessary editable scripts,
+  processed data used by the plot, and final PDF and PNG outputs.
 - [Observed-versus-predicted model comparison](examples/correlation-scatter-plot/README.md):
   uses the same Excel data and prompt to compare LR, SVR, GBRT, and DNN across
-  four land types. The case includes input data, editable scripts, PDF and PNG
-  outputs, preview images, and verification information.
+  four land types. The case includes input data, necessary editable scripts,
+  processed data used by the plot, and final PDF and PNG outputs.
 
 ## Feedback and contact
 

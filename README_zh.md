@@ -92,7 +92,9 @@ conda install -c conda-forge ultraplot
 - 可独立运行、便于继续修改的 Python 绘图脚本；
 - 需要实质性数据处理时使用的预处理脚本和处理后数据；
 - 按要求尺寸生成的 PDF 和 PNG；
-- 记录主要假设、数据处理、输出尺寸和未解决问题的核验说明。
+
+除非用户明确要求，否则 Codex 不交付独立核验说明、manifest、诊断图、日志或其他仅
+用于检查的文件。重要假设和未解决问题在最终回复中概述。
 
 只有 PDF 或栅格图片时，本 skill 只能检查可见内容和文件信息，不能从成图还原未提供
 的数据、处理流程、统计方法或可复现代码。
@@ -104,10 +106,10 @@ conda install -c conda-forge ultraplot
 
 - [2025 年全球 M5+ 地震 skill 对照案例](examples/earthquake/README_zh.md)：
   在相同数据和提示词下，分别使用和不使用 `$ultraplot-figures` 生成图件。案例包含
-  输入数据、可编辑脚本、PDF、PNG、预览图及文件信息。
+  输入数据、必要的可编辑脚本、绘图实际使用的处理后数据及最终 PDF 和 PNG。
 - [预测值与真实值模型对照案例](examples/correlation-scatter-plot/README_zh.md)：
   使用相同 Excel 数据和提示词，对比 LR、SVR、GBRT 和 DNN 在四种地类下的图件。
-  案例包含输入数据、可编辑脚本、PDF、PNG、预览图及核验信息。
+  案例包含输入数据、必要的可编辑脚本、绘图实际使用的处理后数据及最终 PDF 和 PNG。
 
 ## 反馈与联系
 

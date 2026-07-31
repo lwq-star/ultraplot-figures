@@ -190,7 +190,6 @@ def process(input_path: Path, output_dir: Path) -> None:
 
     processed_path = output_dir / "processed_pairs.csv"
     statistics_path = output_dir / "correlation_statistics.csv"
-    exclusions_path = output_dir / "exclusion_summary.csv"
 
     expected_groups = len(LAND_COVERS) * len(MODELS)
     if len(statistics_frame) != expected_groups or len(exclusion_frame) != expected_groups:
@@ -204,13 +203,11 @@ def process(input_path: Path, output_dir: Path) -> None:
     statistics_frame.to_csv(
         statistics_path, index=False, float_format="%.15g", lineterminator="\n"
     )
-    exclusion_frame.to_csv(exclusions_path, index=False, lineterminator="\n")
 
     print(f"Processed rows: {len(processed):,}")
     print(f"Statistics rows: {len(statistics_frame):,}")
     print(f"Wrote: {processed_path.name}")
     print(f"Wrote: {statistics_path.name}")
-    print(f"Wrote: {exclusions_path.name}")
 
 
 def parse_args() -> argparse.Namespace:

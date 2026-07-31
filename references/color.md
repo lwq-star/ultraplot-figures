@@ -54,8 +54,9 @@ uplt.Colormap("Blues4_r", "Reds3", name="Diverging")
 uplt.Colormap("Greens1_r", "Oranges1", "Blues1_r", "Blues6", ratios=(1, 3, 5, 10))
 ```
 Colorspaces: `'hsl'` (default, full gamut), `'hpl'` (soft pastels, most uniform),
-`'hcl'` (purely uniform but has impossible colors). Save for reuse with
-`save=True`.
+`'hcl'` (purely uniform but has impossible colors). Keep task-specific colormaps
+inline. Use `save=True` only when the user explicitly requests persistent reuse;
+do not create a saved colormap merely for the current figure.
 
 ## Modifying existing colormaps
 Pass these to `uplt.Colormap(...)` or inline via `cmap_kw={...}`:

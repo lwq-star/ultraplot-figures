@@ -19,7 +19,10 @@ Do not assume that missing CRS metadata represent EPSG:4326.
 ## 2. Prepare the display coordinates
 
 Use EPSG:4326 as the default plotting CRS. If the source CRS is not EPSG:4326,
-create an in-memory or temporary display-only representation in EPSG:4326.
+prefer an in-memory display-only representation in EPSG:4326. If an on-disk
+temporary representation is unavoidable, create it outside the formal
+deliverable set in a task-specific temporary location and remove only the
+temporary files created by the current task after verification.
 
 Do not overwrite the source data. Do not use the display representation for
 area, distance, zonal statistics, trend analysis, or other scientific
@@ -72,4 +75,5 @@ Confirm that:
 - administrative boundaries and rasters align;
 - NoData areas are not assigned scientific colors;
 - no source or analytical dataset was overwritten;
+- no display-only temporary dataset remains in the formal deliverable set;
 - the rendered output was visually inspected.

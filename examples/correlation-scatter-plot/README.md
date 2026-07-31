@@ -57,7 +57,6 @@ and to provide runnable Python plus PDF and PNG. Only this instruction changed:
 | PNG | [correlation_scatter.png](with_skill/correlation_scatter.png) | [correlation_scatter_ultraplot.png](without_skill/correlation_scatter_ultraplot.png) |
 | Processed pairs | [processed_pairs.csv](with_skill/processed_pairs.csv) | Not written separately |
 | Statistics | [correlation_statistics.csv](with_skill/correlation_statistics.csv) | Computed in memory by the plotting script |
-| Exclusion summary | [exclusion_summary.csv](with_skill/exclusion_summary.csv) | Not written separately |
 
 ## Objective output information
 

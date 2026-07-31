@@ -54,7 +54,6 @@
 | PNG | [correlation_scatter.png](with_skill/correlation_scatter.png) | [correlation_scatter_ultraplot.png](without_skill/correlation_scatter_ultraplot.png) |
 | 处理后配对数据 | [processed_pairs.csv](with_skill/processed_pairs.csv) | 不单独写出 |
 | 统计量 | [correlation_statistics.csv](with_skill/correlation_statistics.csv) | 由绘图脚本在内存中计算 |
-| 排除汇总 | [exclusion_summary.csv](with_skill/exclusion_summary.csv) | 不单独写出 |
 
 ## 客观输出信息
 

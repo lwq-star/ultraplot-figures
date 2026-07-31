@@ -21,7 +21,7 @@ A useful one-sentence brief is:
 
 Use one width authority. Honor an explicitly requested journal preset first, or an explicitly requested total physical figure width second. If neither is supplied, use UltraPlot's `journal="nat2"` default for this skill (Nature two-column, 183 mm). Do not infer a different journal, approximate a preset with a nearby manual width, or combine `journal` with a competing `figwidth` or `refwidth`.
 
-Record the sizing authority, expected physical width, final format, and whether exact saved dimensions are required. `refaspect` may still describe subplot geometry without competing with the total-width authority.
+Keep the sizing authority, expected physical width, final format, and exact-dimension requirement in the necessary plotting code or final response. Do not create a separate sizing note. `refaspect` may still describe subplot geometry without competing with the total-width authority.
 
 ## 3. Inspect the data before plotting
 
@@ -50,12 +50,12 @@ For geospatial figures, an EPSG:4326 transformation created only for final displ
 
 When processing is required, use two scripts:
 
-- `process_data.py`: reads the raw input, validates and transforms it, and writes a processed data file. It should not create the final figure.
-- `plot_figure.py`: reads the processed data file and creates the figure. It should not contain hidden cleaning, aggregation, normalization, or statistical analysis.
+- `process_data.py`: reads the raw input, validates and transforms it, and writes only the processed datasets required by the plotting script. It should not create the final figure.
+- `plot_figure.py`: reads the processed datasets and creates the figure. It should not contain hidden cleaning, aggregation, normalization, or statistical analysis.
 
-When multiple figures are requested, use one independently runnable plotting entry script for each scientifically distinct figure. A single parameterized entry script may generate several figures only when their layout, scientific meaning, and processing logic are the same and they differ only by inputs, regions, years, labels, or similarly simple parameters. Put genuinely shared rendering utilities in a small helper module instead of combining unrelated figures in one script.
+When multiple figures are requested, use one independently runnable plotting entry script for each scientifically distinct figure. A single parameterized entry script may generate several figures only when their layout, scientific meaning, and processing logic are the same and they differ only by inputs, regions, years, labels, or similarly simple parameters. Keep rendering code in the entry script by default. Add a helper module only when the delivered workflow imports it and it materially reduces necessary duplication.
 
-Write the processed data to disk in an appropriate format such as CSV, Parquet, NetCDF, or another format suited to the data. Use explicit input and output paths, deterministic operations, and fixed random seeds where randomness is unavoidable.
+Write only the final processed datasets that the plotting scripts read, using an appropriate format such as CSV, Parquet, NetCDF, or another format suited to the data. Keep validation-only tables and intermediate results in memory unless the user explicitly requests them. Use explicit input and output paths, deterministic operations, and fixed random seeds where randomness is unavoidable.
 
 A typical delivery structure is:
 
@@ -71,18 +71,14 @@ Use names and formats appropriate to the task; the separation of responsibilitie
 
 ## 6. Required deliverables
 
-When preprocessing is required, provide:
+When preprocessing is required, provide only the processing code, plotting code, processed datasets directly read by the plotting code, and the final vector and PNG figures.
 
-1. the data-processing script;
-2. the plotting script;
-3. the processed data file used by the plotting script;
-4. the rendered figure in the requested final format, plus a preview when useful;
-5. a brief note describing important assumptions, transformations, sizing authority, measured output dimensions, and any manual spacing overrides.
+When preprocessing is not required, do not create an empty processing script or processed-data placeholder. Provide only the plotting code and final vector and PNG figures.
 
-When preprocessing is not required, do not create an empty processing script. Provide the plotting script, rendered figure files, and identify the input data used.
+Do not create standalone notes, manifests, audit tables, or verification reports. Put reproduction-critical assumptions and transformations in the necessary code or metadata embedded in an already required processed dataset, and summarize material information in the final response. For multiple figures, describe the figure-to-script mapping in the final response instead of creating a manifest file.
 
-For multiple figures, also provide a manifest mapping each figure to its plotting entry script, processed inputs, and rendered outputs.
+Keep validation-only values and tables in memory unless the user explicitly requests them or the final plotting code directly reads them. Apply the formal-deliverables policy in `SKILL.md` to every handoff.
 
 ## 7. Verify the scientific message
 
-Before delivery, render and inspect both the vector output and a raster preview. Confirm that the chosen encoding supports the intended comparison, axes and units are clear, transformations and uncertainty are labeled, colors are consistent with the variable type, and the figure remains legible at its intended size. Check the saved PDF media box rather than trusting only the size requested in code. For `journal="nat2"`, the PDF must be 183 mm wide within 0.2 mm. Do not use `bbox_inches="tight"`, because post-render cropping can change the physical page size. The final figure should answer the stated scientific question without relying on undocumented processing or layout overrides.
+Before delivery, render and inspect both the final vector output and the final PNG output. Confirm that the chosen encoding supports the intended comparison, axes and units are clear, transformations and uncertainty are labeled, colors are consistent with the variable type, and the figure remains legible at its intended size. Check the saved PDF media box rather than trusting only the size requested in code. For `journal="nat2"`, the PDF must be 183 mm wide within 0.2 mm. Do not use `bbox_inches="tight"`, because post-render cropping can change the physical page size. The final figure should answer the stated scientific question without relying on undocumented processing or layout overrides.

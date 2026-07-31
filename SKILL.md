@@ -48,8 +48,26 @@ After completing or skipping the release check, apply the mandatory workflow in 
 8. **Prepare the default WGS84 display data.** Use EPSG:4326 (WGS84 longitude/latitude) as the default plotting CRS for geospatial figures. When the source CRS differs, create an in-memory or temporary display-only EPSG:4326 representation before plotting. Do not overwrite the source dataset, use the display representation for area, distance, zonal statistics, or trend calculations, or obtain degree axes by relabeling projected coordinates. Use another display projection only when the user or required figure specification explicitly requests it.
 9. **Decide whether preprocessing is required.** Cleaning, filtering, joining, reshaping, aggregation, normalization, derived variables, or statistical summaries count as data processing.
 10. **Separate processing from plotting.** When preprocessing is required, create a dedicated processing script and a separate plotting script. The plotting script should read the processed data and should not hide substantive cleaning or analysis steps.
-11. **Define plotting-script granularity.** Give each scientifically distinct figure an independently runnable plotting entry script. A single parameterized entry script may generate a homogeneous figure series only when the layout, scientific meaning, and processing logic are the same and the figures differ only by inputs, regions, years, or labels. Put genuinely shared rendering utilities in a small helper module.
-12. **Deliver reproducible artifacts.** When preprocessing is required, return both scripts, the processed data file, and the rendered figure files. When it is not required, return the plotting script and rendered figure files. Record important assumptions and transformations.
+11. **Define plotting-script granularity.** Give each scientifically distinct figure an independently runnable plotting entry script. A single parameterized entry script may generate a homogeneous figure series only when the layout, scientific meaning, and processing logic are the same and the figures differ only by inputs, regions, years, or labels. Keep rendering code in the entry script by default. Add a helper module only when the delivered workflow imports it and it materially reduces necessary duplication.
+12. **Apply the formal-deliverables policy.** Follow the mandatory allowlist below after preprocessing, rendering, and verification.
+
+## Formal deliverables
+
+Treat the formal deliverable set as a strict allowlist, whether or not it has a dedicated output directory. Unless the user or target journal explicitly requires otherwise, deliver only:
+
+- the final vector and final PNG figure files;
+- independently runnable plotting entry scripts and any local code or assets directly imported or read by the delivered scripts;
+- when substantive preprocessing is required, the preprocessing scripts and only the final processed datasets directly read by the plotting scripts.
+
+Treat a local file as a direct reproduction dependency only when removing it would prevent the delivered workflow from regenerating the final figure. Do not copy user-provided raw inputs or installed environment dependencies merely to make the output directory self-contained.
+
+Do not deliver files used only for debugging, checking, experimentation, or explanation. This includes draft, test, check, and smoke-test renders; screenshots; diagnostic overlays or tables; logs; standalone verification notes; reports; manifests; README or instruction files; environment manifests; lock files; caches; backups; temporary reprojections; intermediate processing files; duplicate data representations; and unrequested figure formats.
+
+Throughout this skill, "record" means encode reproduction-critical information in concise code comments, constants, or metadata embedded in an already required processed dataset, and summarize material assumptions or deviations in the final response. Do not create a separate notes, report, or manifest file unless the user explicitly requests it.
+
+Prefer re-rendering corrected figures to the same final paths. If a separate diagnostic artifact is unavoidable, create it outside the formal deliverable set in a task-specific temporary location and remove only artifacts created by the current task after verification. Never remove pre-existing user files.
+
+Before handoff, enumerate the formal deliverable set and confirm that every file is either a final figure or a direct reproduction dependency.
 
 ## Layout gate (before creating the figure)
 
@@ -167,7 +185,7 @@ Steps every time:
 3. **Pick the plot commands.** Use axes-level UltraPlot commands and feed pandas or xarray objects directly when appropriate.
 4. **Choose color.** Match the colormap or cycle type to the data type.
 5. **Format identifiers, then add ordinary annotations.** Unless directly requested, keep figure-level and subplot-level title-producing arguments and methods out of the plotting code. Apply the consolidated main-Axes `format()` call, including `abc="a.", abcloc="ul"` when required, before placing ordinary annotations. Preserve scientifically necessary axis labels, guide labels, annotations, panel identifiers, and structural labels. Keep handles to statistics blocks, equations, sample sizes, and callouts. Start with a consistent non-upper-left location for homogeneous small multiples. If no fixed location is satisfactory, move only the lower-priority annotation with an explicit identifier obstacle. Interpret a `title` argument by the receiving API: legend and colorbar title aliases are guide labels, not figure-level or subplot-level titles.
-6. **Render and verify.** Save every final output with the same explicit `EXPORT_DPI`, using 1000 dpi by default. Inspect the PDF and PNG, verify the actual output resolution, and measure any suspected layout defect before adding a spacing override. Verify expected and detected identifier counts, exact numbering, inner upper-left placement, canvas containment, legibility, and collision-free reserved regions. Treat a missing, relocated, duplicated, misordered, clipped, or annotation-obscured required identifier as a blocking failure.
+6. **Render and verify.** Save every final output with the same explicit `EXPORT_DPI`, using 1000 dpi by default. Inspect the PDF and PNG, verify the actual output resolution, and measure any suspected layout defect before adding a spacing override. Verify expected and detected identifier counts, exact numbering, inner upper-left placement, canvas containment, legibility, and collision-free reserved regions. Treat a missing, relocated, duplicated, misordered, clipped, or annotation-obscured required identifier as a blocking failure. Re-render corrections to the same final paths whenever possible. Do not create separate draft, check, or test copies in the formal deliverable set.
 
 ## Colormap & cycle quick reference
 
@@ -215,10 +233,11 @@ Steps every time:
 - Overwriting source data with a display-only EPSG:4326 representation.
 - Using display-transformed data as input for statistics or spatial analysis.
 - Combining scientifically different figures in one monolithic plotting script.
+- Treating verification, diagnostic, report, or manifest artifacts as formal deliverables, or leaving task-created temporary files beside final artifacts.
 
 ## Verifying
 
-Do not claim a figure "looks good" without rendering it. Save both the final vector output and a PNG preview, then inspect them with the effective typography and final labels. Confirm that labels, panel letters, annotations, insets, and outer guides are legible and do not overlap or clip. If the user did not directly request a figure-level or subplot-level title, treat any such title in the plotting code or rendered output as a blocking failure. Remove its producing argument, method, or pre-existing artist, render again, and reinspect both PDF and PNG. Audit calls by their receiving API; do not classify legend titles, colorbar labels, axis labels, panel identifiers, or grid-edge structural labels as figure-level or subplot-level titles. Record the sizing authority and every manual spacing override in the verification notes.
+Do not claim a figure "looks good" without rendering it. Save both the final vector output and the final PNG output, then inspect them with the effective typography and final labels. Confirm that labels, panel letters, annotations, insets, and outer guides are legible and do not overlap or clip. If the user did not directly request a figure-level or subplot-level title, treat any such title in the plotting code or rendered output as a blocking failure. Remove its producing argument, method, or pre-existing artist, render again, and reinspect both PDF and PNG. Audit calls by their receiving API; do not classify legend titles, colorbar labels, axis labels, panel identifiers, or grid-edge structural labels as figure-level or subplot-level titles. Encode reproduction-critical sizing and spacing decisions in the necessary plotting code and summarize material deviations in the final response. Do not create a standalone verification-notes artifact unless explicitly requested.
 
 For figures requiring panel identifiers, count only independent main Axes and
 exclude colorbars, legend-only Axes, helper Axes, and non-independent insets.
@@ -264,6 +283,9 @@ Evaluate GridSpec slots, visible axes frames, and decorated content. A positive 
 - any explicit deviation from 1000 dpi is supported by a direct user or journal requirement;
 - geospatial figures use EPSG:4326/WGS84 with degree-formatted longitude and latitude axes unless another projection was explicitly requested;
 - the displayed extent matches the study area, north-south orientation is correct, boundaries align with the raster, and NoData regions are rendered as intended.
+- the formal deliverable set contains only allowlisted files;
+- every delivered helper, asset, and processed dataset is a direct reproduction dependency;
+- no task-created diagnostic, temporary, cache, backup, report, or check file remains in the formal deliverable set.
 
 Do not issue a publication-quality pass based only on canvas containment,
 non-overlap, and successful file export. Unexplained fixed-aspect slot waste that
@@ -271,19 +293,6 @@ creates a composition-wide blank band or materially shrinks a dominant panel is
 a blocking layout failure.
 
 For `journal="nat2"`, verify that the saved PDF media box is 183 mm wide (about 7.2047 in or 518.74 pt; tolerance 0.2 mm). Do not rely only on the size requested in code.
-
-A quick smoke test:
-
-```python
-import ultraplot as uplt
-
-EXPORT_DPI = 1000
-
-fig, ax = uplt.subplots(journal="nat2")
-ax.plot([0, 1, 2], [0, 1, 4])
-fig.save("figure_check.pdf", dpi=EXPORT_DPI)
-fig.save("figure_check.png", dpi=EXPORT_DPI)
-```
 
 ## Optional reference files (load only when needed)
 

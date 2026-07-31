@@ -93,13 +93,13 @@ axr = ax.alty(ylabel="precipitation (mm)", ycolor="denim")
 axr.bar(x, precip, color="denim", alpha=0.5)
 ```
 
-## Render check
-Save and open every figure before declaring it done:
+## Final render
+Save and inspect every figure using its final filenames:
 
 ```python
 EXPORT_DPI = 1000
-fig.save("figure_check.pdf", dpi=EXPORT_DPI)
-fig.save("figure_check.png", dpi=EXPORT_DPI)
+fig.save("figure.pdf", dpi=EXPORT_DPI)
+fig.save("figure.png", dpi=EXPORT_DPI)
 ```
 
-Inspect both files. For the default `journal="nat2"`, confirm that the PDF media box is 183 mm wide and that no manual spacing override was needed.
+Replace `figure` with the task's final basename and re-render corrections to the same paths. Do not create separate check, draft, or test copies. Inspect both final files. For the default `journal="nat2"`, confirm that the PDF media box is 183 mm wide and that no manual spacing override was needed.
