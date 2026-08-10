@@ -130,6 +130,9 @@ Write delivered code for reproduction and maintenance, not to prove that QA ran.
 - Use public documented APIs. Confirm installed UltraPlot, matplotlib, and
   cartopy versions before relying on version-specific behavior. The validated
   baseline is UltraPlot 2.5.0, matplotlib 3.10.6, and cartopy 0.25.0.
+- For routine values attached to bars, use the `bar_labels` and
+  `bar_labels_kw` parameters of `Axes.bar()` or `Axes.barh()` instead of
+  positioning `Axes.text()` labels manually.
 - Match the encoding to the scientific question. Use perceptually uniform,
   colorblind-safe sequential maps for magnitude, diverging maps centered on a
   real neutral value for signed data, cyclic maps for phase or angle, and
