@@ -127,14 +127,19 @@ applications, and does not support generating flowcharts.
 
 ## Examples
 
-- [2025 global M5+ earthquake skill comparison](examples/earthquake/README.md):
+Complete examples are maintained in the separate
+[`ultraplot-figures-examples`](https://github.com/lwq-star/ultraplot-figures-examples)
+repository, so installing this skill does not download example data or rendered
+outputs.
+
+- [2025 global M5+ earthquake skill comparison](https://github.com/lwq-star/ultraplot-figures-examples/blob/v1.0.0/examples/earthquake/README.md):
   uses the same data and prompt to generate figures with and without
   `$ultraplot-figures`. The case includes input data, necessary editable scripts,
-  processed data used by the plot, and final PDF and PNG outputs.
-- [Observed-versus-predicted model comparison](examples/correlation-scatter-plot/README.md):
+  and final PDF and PNG outputs.
+- [Observed-versus-predicted model comparison](https://github.com/lwq-star/ultraplot-figures-examples/blob/v1.0.0/examples/correlation-scatter-plot/README.md):
   uses the same Excel data and prompt to compare LR, SVR, GBRT, and DNN across
-  four land types. The case includes input data, necessary editable scripts,
-  processed data used by the plot, and final PDF and PNG outputs.
+  four land types. The case includes input data, necessary editable scripts, and
+  final PDF and PNG outputs.
 
 ## Feedback and contact
 

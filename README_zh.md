@@ -108,12 +108,16 @@ Codex 在内部完成核验，不保留核验代码、独立核验说明、manif
 
 ## 示例
 
-- [2025 年全球 M5+ 地震 skill 对照案例](examples/earthquake/README_zh.md)：
+完整示例独立维护在
+[`ultraplot-figures-examples`](https://github.com/lwq-star/ultraplot-figures-examples)
+仓库中，因此安装本 skill 时不会下载示例数据或渲染结果。
+
+- [2025 年全球 M5+ 地震 skill 对照案例](https://github.com/lwq-star/ultraplot-figures-examples/blob/v1.0.0/examples/earthquake/README_zh.md)：
   在相同数据和提示词下，分别使用和不使用 `$ultraplot-figures` 生成图件。案例包含
-  输入数据、必要的可编辑脚本、绘图实际使用的处理后数据及最终 PDF 和 PNG。
-- [预测值与真实值模型对照案例](examples/correlation-scatter-plot/README_zh.md)：
+  输入数据、必要的可编辑脚本及最终 PDF 和 PNG。
+- [预测值与真实值模型对照案例](https://github.com/lwq-star/ultraplot-figures-examples/blob/v1.0.0/examples/correlation-scatter-plot/README_zh.md)：
   使用相同 Excel 数据和提示词，对比 LR、SVR、GBRT 和 DNN 在四种地类下的图件。
-  案例包含输入数据、必要的可编辑脚本、绘图实际使用的处理后数据及最终 PDF 和 PNG。
+  案例包含输入数据、必要的可编辑脚本及最终 PDF 和 PNG。
 
 ## 反馈与联系
 
