@@ -133,10 +133,11 @@ Write delivered code for reproduction and maintenance, not to prove that QA ran.
 - For routine values attached to bars, use the `bar_labels` and
   `bar_labels_kw` parameters of `Axes.bar()` or `Axes.barh()` instead of
   positioning `Axes.text()` labels manually.
-- Match the encoding to the scientific question. Use perceptually uniform,
-  colorblind-safe sequential maps for magnitude, diverging maps centered on a
-  real neutral value for signed data, cyclic maps for phase or angle, and
-  qualitative cycles for categories. Never use `jet` or `rainbow` for magnitude.
+- Let UltraPlot supply the default visual color styling. Explicitly select or
+  override a colormap, normalization, color cycle, or category color only when
+  required by scientific meaning, such as a real neutral value, cyclic data,
+  stable category identity across related figures, or a shared comparison
+  domain. Never use `jet` or `rainbow` for magnitude data.
 - Preserve honest baselines, observation units, spatial geometry, and uncertainty
   meaning. Do not silently discard observations or alter scientific values.
 - Display geospatial distributions in EPSG:4326 with `proj="pcarree"` and
@@ -151,9 +152,20 @@ Write delivered code for reproduction and maintenance, not to prove that QA ran.
   Reserve the inner upper-left region and move ordinary annotations first.
 - Use one consolidated `format()` call per coherent axes group. Mixed GeoAxes and
   CartesianAxes may require separate calls because they accept different keys.
-- Treat the effective UltraPlot configuration as the style baseline. Prefer
-  figure-local formatting, then bounded `uplt.rc.context()` changes. Do not use
-  session-global or persistent rc changes for a single figure.
+- Treat the effective UltraPlot configuration as the default authority for
+  visual appearance. Preserve the explicit policies defined by this skill, but
+  otherwise do not restate or override UltraPlot's effective defaults.
+- In each figure, explicitly set only parameters required for scientific
+  meaning, publication size or output specifications, or the smallest local
+  correction to a concrete defect observed in the final-data render. Omit
+  parameters used only to restyle an already acceptable UltraPlot default.
+- When the same scientific categories recur across related figures, reuse their
+  established color mapping so that color identity remains consistent. Do not
+  create a shared color mapping for categories confined to one figure.
+- Apply necessary overrides at the narrowest scope: a plotting call or
+  `format()` first, then a bounded `uplt.rc.context()` only for settings genuinely
+  shared by several figures. Do not use session-global or persistent rc changes
+  for a single figure.
 - Use exactly one physical width authority. Honor a requested `journal=` preset
   or total `figwidth`; otherwise use `journal="nat2"` (183 mm). Do not combine
   competing width authorities or approximate a journal preset.
