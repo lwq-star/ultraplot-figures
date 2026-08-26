@@ -15,21 +15,6 @@ This repository is a **Codex skill**, not the
 [UltraPlot](https://github.com/ultraplot/ultraplot) Python package or a standalone
 plotting application.
 
-## What's new in v1.2.0
-
-Version 1.2.0 refines the default styling policy:
-
-- Treat UltraPlot's effective configuration as the default authority for visual
-  appearance.
-- Override visual parameters only when required by scientific meaning,
-  publication specifications, or a concrete defect observed in the final-data
-  render.
-- Reuse established category color mappings across related figures while
-  avoiding unnecessary mappings for categories confined to one figure.
-- Keep the bundled [recipes](references/recipes.md) as concise
-  scientific-encoding and API skeletons that inherit UltraPlot's effective
-  visual defaults.
-
 > [!CAUTION]
 > **Figures generated or revised with this skill must be reviewed by the author
 > before submission or formal release.** The skill provides reproducible,
