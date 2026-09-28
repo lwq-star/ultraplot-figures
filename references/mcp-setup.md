@@ -1,16 +1,46 @@
 # Configure the official UltraPlot MCP server
 
-Read this reference only when the user explicitly asks to configure,
-troubleshoot, or repair the UltraPlot MCP server. Begin troubleshooting with
-read-only diagnostics. Configuration or repair can install packages, create a
-documentation checkout, modify persistent Codex settings, and require a Codex
-restart; perform only the changes the user requested. Do none of these during an
-ordinary figure task.
+Read this reference when the first-use bootstrap reports a missing or
+misaligned server, or when the user explicitly asks to configure, troubleshoot,
+or repair the UltraPlot MCP server. Begin with read-only diagnostics. A
+configuration repair can install packages, modify persistent Codex settings,
+and require a Codex restart; perform only the changes the user authorized. Do
+not clone documentation or change unrelated settings as part of an ordinary
+figure task.
 
 Use the official UltraPlot and OpenAI documentation as the authority:
 
 - <https://github.com/ultraplot/ultraplot/blob/v2.7.0/README.rst#mcp-server>
 - <https://learn.chatgpt.com/docs/extend/mcp>
+
+## 0. First-use bootstrap
+
+Resolve `<skill-root>` from `SKILL.md`, then run the bundled check with the
+interpreter selected for plotting:
+
+```powershell
+& '<python.exe>' '<skill-root>\scripts\ensure_mcp.py' --check --json
+```
+
+The check does not install packages or write configuration. If it reports
+`needs_configuration` or `missing_mcp_dependency` and the user has authorized
+the first-use mutation, run:
+
+```powershell
+& '<python.exe>' '<skill-root>\scripts\ensure_mcp.py' --configure --yes --json
+```
+
+Use `--install-dependencies` only with separate authorization to install the
+matching `ultraplot[mcp]` extra. Use `--docs '<existing matching docs>'` only for
+an existing directory; the bootstrap never clones a repository. A successful
+configuration reports `restart_required`; start a new Codex task or restart the
+client, then rerun the normal `ping` and source-alignment checks.
+
+If configuration reports a conflict with an existing command, table shape, or
+environment, stop for manual review. Use `--force` only after the user
+explicitly authorizes replacing the reviewed command. `config_invalid` and
+`interpreter_error` are read-only failures: preserve the file and continue with
+the selected-runtime fallback after reporting the exact reason.
 
 ## 1. Reuse an existing server first
 

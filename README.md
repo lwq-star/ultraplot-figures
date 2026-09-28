@@ -106,9 +106,12 @@ UltraPlot 2.7.0 and later provide an official MCP server for API, documentation,
 example, release-note, and source inspection. Codex handles MCP availability and
 use as part of the figure workflow.
 
-At use time, the skill checks GitHub for the latest stable release at most once
-per local calendar day. It never downloads, installs, or replaces files during
-this check. Set `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` to disable it.
+On first use, the skill checks the selected plotting environment. If MCP is
+missing or mismatched, Codex requests authorization before configuring the
+user-level MCP entry for that same environment; a new task or Codex restart may
+be required afterward. The separate release check runs at most once per local
+calendar day and never downloads, installs, or replaces skill files. Set
+`ULTRAPLOT_FIGURES_UPDATE_CHECK=0` to disable it.
 
 ## Deliverables and limits
 

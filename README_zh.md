@@ -89,10 +89,11 @@ conda install -c conda-forge ultraplot
 ### 3. UltraPlot MCP
 
 UltraPlot 2.7.0 及以上版本提供官方 MCP 服务，用于 API、文档、示例、发行说明和
-源码查询。MCP 是否可用以及如何调用由 Codex 在绘图工作流中处理。
+源码查询。首次使用时，本 skill 会检查当前绘图环境；如果 MCP 缺失或不匹配，Codex
+会先请求授权，再为同一环境配置用户级 MCP，之后可能需要新建任务或重启 Codex。
 
-本 skill 在使用时至多每天检查一次 GitHub 上的最新稳定版，但不会自动下载、安装
-或替换文件。设置 `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` 可以关闭检查。
+独立的版本检查至多每天检查一次 GitHub 上的最新稳定版，不会自动下载、安装或替换
+skill 文件。设置 `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` 可以关闭检查。
 
 ## 交付物与使用限制
 

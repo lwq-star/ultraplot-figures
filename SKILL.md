@@ -40,6 +40,47 @@ interpreter selected by the active environment rules and pass `--auto`.
 
 ## UltraPlot MCP
 
+### First-use bootstrap
+
+At the start of every figure task, after selecting the plotting interpreter,
+resolve `<skill-root>` from this `SKILL.md`, then run the absolute
+`<skill-root>/scripts/ensure_mcp.py --check --json` path with that interpreter.
+The check is read-only and records the exact Python environment and user-level
+Codex config path it inspected. Do not substitute a different interpreter or a
+project environment for this check.
+
+Treat `configured` as a configured MCP entry and
+`configured_without_docs` as API/source-capable but unable to support document
+search until a valid documentation directory is supplied. When the result is
+`needs_configuration`, `missing_mcp_dependency`, or `missing_ultraplot`, report
+the missing condition and, if the user has authorized automatic first-use MCP
+setup, run:
+
+```powershell
+& '<python.exe>' '<skill-root>\scripts\ensure_mcp.py' --configure --yes --json
+```
+
+Add `--install-dependencies` only when the user has also authorized installing
+the matching `ultraplot[mcp]` extra. Pass `--docs '<existing matching docs>'`
+only when a valid documentation directory is already known. The bootstrap does
+not clone repositories, upgrade UltraPlot, or restart Codex. It changes only the
+UltraPlot MCP table in the user-level `config.toml`, preserves unrelated keys,
+and reports `restart_required` after a change. Start a new task or restart
+Codex before treating the newly configured server as callable; until then,
+continue with the normal fallback rules below.
+
+If configuration reports a conflict with an existing command, table shape, or
+environment, stop and review that entry manually. Use `--force` only after the
+user explicitly authorizes replacing the reviewed command; never use it as an
+automatic retry. `config_invalid` and `interpreter_error` are read-only
+diagnostic failures: preserve the file, report the exact reason, and use the
+selected runtime fallback.
+
+Without user authorization for the mutation, do not run `--configure`; use the
+selected runtime and disclose the exact fallback reason. A successful config
+write is not itself an MCP health or environment-alignment result: rerun the
+discovery and `ping` checks after the new Codex session starts.
+
 Before any figure implementation or revision, perform one UltraPlot MCP
 discovery pass. For review-only work, perform the same preflight when the review
 depends on API or version behavior, or when MCP use or a skill comparison is
@@ -355,8 +396,12 @@ Load only the reference needed for a non-trivial decision:
 - `references/verification.md`: detailed internal QA procedures. Never copy its
   diagnostic implementation into delivered scripts.
 - `references/geospatial.md`: CRS, raster, vector, or GeoAxes details.
-- `references/mcp-setup.md`: only for an explicit request to configure or
-  troubleshoot the official UltraPlot MCP server.
+- `references/mcp-setup.md`: when first-use bootstrap reports a missing or
+  misaligned server, or for an explicit MCP configuration or troubleshooting
+  request.
+- `scripts/ensure_mcp.py`: first-use read-only checks and explicitly authorized
+  local MCP configuration. Run it with the selected plotting interpreter; do not
+  retain its JSON output as a task artifact.
 - `references/color.md`: advanced colormap construction or perceptual checks.
 - `references/recipes.md`: a concise starting pattern for a matching figure.
 
