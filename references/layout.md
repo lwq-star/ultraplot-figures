@@ -142,10 +142,21 @@ For two or more independent main Axes, use `abc="a.", abcloc="ul"` unless the
 user or journal specifies otherwise. Count only independent main Axes; exclude
 colorbars, legend-only axes, helper axes, and non-independent insets.
 
+UltraPlot 2.7.0 runtime ordering follows the NumPy convention: `order="C"`
+numbers Axes row-major and `order="F"` numbers them column-major, even though
+the current `subplots()` parameter prose reverses those descriptions. When
+numbering order matters, confirm the public `Axes.number` values instead of
+relying on that prose. Recheck this behavior when the UltraPlot version changes.
+
 Reserve the rendered identifier region plus modest clearance. Place ordinary
 statistics, equations, sample sizes, callouts, legends, and insets elsewhere.
 For homogeneous small multiples, prefer one consistent non-upper-left annotation
 location.
+
+UltraPlot can separate a title and panel identifier that share a built-in title
+location, but ordinary `Axes.text()` artists are not automatic obstacles for the
+identifier. If `auto_align_text()` is needed, pass only the lower-priority text
+artists as movable objects and pass the public identifier artist in `avoid=`.
 
 If a collision occurs:
 

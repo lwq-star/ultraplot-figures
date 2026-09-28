@@ -7,7 +7,8 @@ description: >-
   encodings, concise and maintainable reproducible code, accessible layouts,
   and publication-ready exports. Retain only the minimal plotting code, any
   necessary preprocessing code and final processed data, and the requested
-  final figures; keep verification internal.
+  final figures; keep verification internal. Also use when the user explicitly
+  asks to configure or troubleshoot the official UltraPlot MCP server.
 ---
 
 # UltraPlot Figures
@@ -37,9 +38,88 @@ interpreter selected by the active environment rules and pass `--auto`.
   `up_to_date`, or `check_failed`.
 - Respect `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` as an explicit local opt-out.
 
+## UltraPlot MCP
+
+Before any figure implementation or revision, perform one UltraPlot MCP
+discovery pass. For review-only work, perform the same preflight when the review
+depends on API or version behavior, or when MCP use or a skill comparison is
+explicitly requested. Do not infer that the MCP is unavailable merely because
+no `mcp__ultraplot__*` tool appears in the initially expanded tool list. Inspect
+the current host's complete callable-tool registry, including deferred or nested
+tools.
+
+When `functions.exec` exposes `ALL_TOOLS`, search it for exact tool names
+beginning with `mcp__ultraplot__` and invoke discovered tools through the
+matching `tools.mcp__ultraplot__...` methods. Otherwise, use the host's
+equivalent complete or deferred-tool discovery mechanism. If no complete
+discovery mechanism exists, classify discovery as unverified; do not report
+the MCP as unavailable or unconfigured.
+
+Treat discovery, health, and environment alignment as separate checks:
+
+1. If `mcp__ultraplot__ping` is discovered, call it once before implementation.
+   Registry presence means discovered; only a `pong` response means operational.
+   If other matching tools are present but `ping` is absent, classify health as
+   unverified.
+2. For an operational server, call `get_api("ultraplot.subplots")`. If this tool
+   is absent or the call fails, classify alignment as unverified.
+3. With the selected plotting interpreter, resolve
+   `inspect.getsourcefile(ultraplot.subplots)` and compare the normalized path
+   with the MCP `source_file`. If either path cannot be established, classify
+   alignment as unverified rather than mismatched.
+4. Canonicalize paths before comparison, resolving links where possible and
+   applying the platform's case normalization. Prefer an exact source-file
+   match. If host path mapping makes exact files incomparable, compare package
+   or environment roots only when both can be established; otherwise classify
+   alignment as unverified.
+5. Treat the selected plotting interpreter as authoritative whenever the paths
+   differ or alignment cannot be verified.
+
+For an operational, environment-matched server, inspect the input or existing
+implementation and identify any genuine API, concept, or version question. When
+one exists, perform at least one task-relevant MCP lookup before writing plotting
+code. `ping` and the fixed `get_api("ultraplot.subplots")` alignment probe alone
+do not count as MCP-assisted implementation. Use `get_api` for signatures and
+docstrings, `search_docs` followed by `read_doc` for concepts and examples,
+`search_release_notes` for version history, and `get_source` only when the
+preceding sources are insufficient.
+
+If inspection establishes that no such question exists, as with a literal-only
+label revision, do not invent an MCP lookup. Record the task-relevant lookup as
+not applicable and do not label the run MCP-assisted or MCP-enabled.
+
+API environment alignment does not prove that a separately configured
+documentation checkout has the same version. For version-sensitive decisions,
+verify the documentation version against the selected runtime or cross-check the
+claim with the matched live API or source. Otherwise treat documentation
+provenance as unverified and use it only for non-version-specific guidance.
+
+For an ordinary figure task, fallback to the selected runtime after making the
+required discovery and preflight attempt when any of these states applies: no
+matching tool was found by complete discovery; no complete discovery mechanism
+exists and a required tool is not directly discoverable; `ping` is absent,
+fails, or does not return `pong`; the `get_api` alignment probe is absent or
+fails; alignment is mismatched or unverified; or a task-relevant lookup is
+unavailable or fails. Disclose the fallback and its exact reason in the final
+response. Never infer "not configured" from tool absence; configuration and
+current-session callability are separate facts.
+
+When MCP use is explicitly requested or defines an experimental arm, do not
+present a fallback result as MCP-enabled. A run may be labelled MCP-enabled only
+when `ping` succeeded, the environments matched, and at least one task-relevant
+MCP lookup succeeded. Report the MCP tools actually used.
+
+MCP lookup does not replace executing the delivered script or visually
+verifying final exports. For MCP troubleshooting, begin with read-only
+diagnostics. Do not install packages, clone documentation, edit Codex
+configuration, or restart Codex unless the user explicitly requests the
+corresponding configuration or repair action. For an explicit setup,
+troubleshooting, or repair request, read `references/mcp-setup.md`.
+
 ## Retained task artifacts
 
-Treat retained task files as a strict allowlist. Retain only:
+For figure creation and revision tasks, treat retained task files as a strict
+allowlist. Retain only:
 
 - one independently runnable plotting entry script for each scientifically
   distinct figure, plus minimal local helper code only when it materially
@@ -65,6 +145,11 @@ final response instead of creating another file.
 For review-only work, do not create retained files unless the user asks for a
 revision. For revisions, preserve the existing workflow where practical and make
 the smallest maintainable change that satisfies the request.
+
+User-authorized MCP setup or repair is infrastructure work, not a figure
+deliverable. The figure-task allowlist does not prohibit the specific dependency,
+documentation checkout, or configuration changes required by that request;
+preserve unrelated infrastructure and settings.
 
 ## Choose the workflow
 
@@ -127,9 +212,10 @@ Write delivered code for reproduction and maintenance, not to prove that QA ran.
 
 ## Scientific and output requirements
 
-- Use public documented APIs. Confirm installed UltraPlot, matplotlib, and
-  cartopy versions before relying on version-specific behavior. The validated
-  baseline is UltraPlot 2.6.0, matplotlib 3.10.6, and cartopy 0.25.0.
+- Use public documented APIs. Treat versions imported by the selected plotting
+  interpreter as authoritative. Treat MCP results as current for the task only
+  after confirming that the server uses the same environment. The validated
+  baseline is UltraPlot 2.7.0, matplotlib 3.10.6, and cartopy 0.25.0.
 - For routine values attached to bars, use the `bar_labels` and
   `bar_labels_kw` parameters of `Axes.bar()` or `Axes.barh()` instead of
   positioning `Axes.text()` labels manually.
@@ -217,12 +303,16 @@ glyphs in vector and raster output.
 
 ## Implementation sequence
 
-Inspect the input and choose the data flow. If substantive preprocessing is
-needed, implement and run it first. Then load only plot-ready data, perform
-minimal plotting-input checks, create and format the figure, save directly to
-the final requested paths, and verify internally. Use `references/recipes.md`
-for concise starting patterns; do not treat any recipe as a mandatory function
-or project template.
+Select the plotting interpreter, then complete the MCP discovery, health, and
+environment-alignment preflight above. Inspect the input or existing
+implementation and choose the data flow. When the server is operational and
+matched and a genuine API, concept, or version question exists, complete at
+least one lookup relevant to the task as now understood before writing plotting
+code. If substantive preprocessing is needed, implement and run it first. Load
+only plot-ready data, perform minimal plotting-input checks, create and format
+the figure, save directly to the final requested paths, and verify internally.
+Use `references/recipes.md` for concise starting patterns; do not treat any
+recipe as a mandatory function or project template.
 
 ## Internal verification
 
@@ -248,6 +338,12 @@ resolution, applicable geospatial behavior, and the retained-file allowlist. For
 `references/verification.md` for the detailed procedure and do not retain a
 verification report.
 
+Whenever the MCP preflight ran, or for an explicit MCP request or skill
+comparison, also confirm that the final response states the discovery result,
+health result, environment-alignment result, and task-relevant MCP tools actually
+called. State clearly when a review-only task skipped the preflight. Keep this
+audit in the response; do not retain an MCP log file.
+
 ## Optional references
 
 Load only the reference needed for a non-trivial decision:
@@ -259,9 +355,10 @@ Load only the reference needed for a non-trivial decision:
 - `references/verification.md`: detailed internal QA procedures. Never copy its
   diagnostic implementation into delivered scripts.
 - `references/geospatial.md`: CRS, raster, vector, or GeoAxes details.
-- `references/api.md`: unfamiliar commands or parameter semantics.
+- `references/mcp-setup.md`: only for an explicit request to configure or
+  troubleshoot the official UltraPlot MCP server.
 - `references/color.md`: advanced colormap construction or perceptual checks.
 - `references/recipes.md`: a concise starting pattern for a matching figure.
 
 References inform implementation and internal verification. They do not expand
-the retained task artifact allowlist.
+the retained figure-task artifact allowlist.

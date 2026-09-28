@@ -39,9 +39,12 @@ Confirm that:
 ## Panel and layout checks
 
 Count only independent main Axes when deriving expected panel identifiers. Use
-the documented numbering semantics and public `Axes.number` values. Confirm one
-expected identifier per main Axes, correct ordering, upper-left placement,
-canvas containment, and clearance from ordinary annotations and insets.
+public `Axes.number` values as the numbering authority. In UltraPlot 2.7.0,
+`order="C"` is row-major and `order="F"` is column-major even though the current
+`subplots()` parameter prose reverses those descriptions; recheck this behavior
+when the version changes. Confirm one expected identifier per main Axes, correct
+ordering, upper-left placement, canvas containment, and clearance from ordinary
+annotations and insets.
 
 For the complex layouts listed in the verification workflow, inspect with the
 final renderer:

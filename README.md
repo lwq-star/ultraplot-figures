@@ -100,6 +100,21 @@ details.
 
 Installing this skill does not install UltraPlot or its dependencies.
 
+### 3. Optional: enable the official UltraPlot MCP server
+
+UltraPlot 2.7.0 and later include an optional MCP server for live API
+inspection, documentation and example search, release-note search, and source
+inspection. The skill remains usable without MCP. To enable it, install the
+`mcp` extra into the same Python environment used for plotting and configure
+Codex to launch that environment's server. The Python wheel does not currently
+bundle the documentation tree, so the documentation tools also need a matching
+official UltraPlot documentation checkout.
+
+See [the MCP setup reference](references/mcp-setup.md) for environment-aligned
+installation, Codex configuration, verification, and troubleshooting. The
+reference is intentionally separate because ordinary figure tasks must not
+install packages or modify persistent Codex configuration automatically.
+
 At use time, the skill checks GitHub for the latest stable release at most once
 per local calendar day. It never downloads, installs, or replaces files during
 this check. Set `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` to disable it.
