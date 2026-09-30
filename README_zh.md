@@ -33,16 +33,17 @@ PNG。请说明科学问题和作图目的，并附上已有的版面尺寸、�
 
 ### 默认设置
 
-没有指定版面尺寸时，使用 UltraPlot 的 `nat2` 预设，即 183 mm 总宽度。除非另有
-要求，输出 PDF 和 PNG。
+对于没有宽度要求的新出版图件，可以使用 UltraPlot 的 `nat2` 预设（总宽度 183 mm）。
+未指定格式时，通常输出面向出版的 PDF 和 PNG；如果用户、期刊或现有项目已经规定尺寸
+和格式，应以这些规定为准。
 
-没有指定期刊或字体时，UltraPlot 默认使用 9 pt 无衬线 TeX Gyre Heros。它是开源的
-Helvetica 风格字体，在小尺寸图件中较清楚，也便于跨系统复现。它符合许多期刊常见的
-无衬线风格。例如，[Nature 要求图中文字使用无衬线字体，并优先推荐 Helvetica 或 Arial](https://www.nature.com/nature/for-authors/final-submission)。
+默认保留 UltraPlot 当前生效的字体配置。没有字体要求时，应选择与项目或期刊匹配、且
+本地已安装并可复现的字体，不强行设置新的全局字体。许多期刊偏好清晰的无衬线风格，
+例如，[Nature 要求图中文字使用无衬线字体，并优先推荐 Helvetica 或 Arial](https://www.nature.com/nature/for-authors/final-submission)。
 
-对于中文文本，本 skill 保留 TeX Gyre Heros 作为拉丁字符主字体，并将
-`Microsoft YaHei`（微软雅黑）作为默认中文回退字体。微软雅黑是无衬线中文字体，覆盖
-常用简体中文字形，在科研图件常见的小字号下笔画清楚、易于辨认。
+对于中文文本，请选择符合用户、期刊或项目要求的本地 CJK 回退字体。已安装时可以使用
+`Microsoft YaHei`（微软雅黑）作为示例；本 skill 不会下载或全局安装字体。栅格图使用
+用户或项目规定的 DPI；仅输出矢量图时不要强行设置 DPI。
 
 ### 请求示例
 
@@ -69,31 +70,83 @@ ultraplot-figures。该 skill 位于仓库根目录（路径 `.`），安装名�
 
 ### 2. 安装 UltraPlot
 
-使用 pip 安装：
+请将 UltraPlot 安装到实际运行绘图脚本的解释器中。MCP 服务也必须使用同一解释器，
+不要把裸 `pip` 安装到无关环境：
 
 ```bash
-pip install ultraplot
+<python> -m pip install "ultraplot[mcp]==2.7.0"
 ```
+
+只有在项目明确要求时才改用其他精确的稳定版 2.7.x；不要使用不带版本约束的安装，
+以免选到尚未支持的未来版本。
 
 也可以使用 conda：
 
 ```bash
-conda install -c conda-forge ultraplot
+conda install -n <environment> -c conda-forge ultraplot
 ```
+
+将 `<python>` 和 `<environment>` 替换为当前主机及项目规则选定的解释器/环境。在
+Windows PowerShell 中，通常写成 `& 'D:\path\to\python.exe' -m pip ...`；在 POSIX
+shell 中使用 `/path/to/python -m pip ...`。
 
 需要地理投影时应另行安装 Cartopy；其他数据读取和处理库按具体任务安装。详细要求
 见 UltraPlot [安装指南](https://ultraplot.readthedocs.io/en/stable/install.html)。
 
-安装本 skill 不会自动安装 UltraPlot 或其依赖。
+安装或更新本 skill 不会立即执行包安装。安装或更新后的首次调用会先在选定的绘图环境中
+进行只读预检；满足安全条件时，随后可执行幂等的 MCP 引导。之后的普通图件任务也会执行
+同一套预检，不依赖持久化的“首次使用”标记。仅审阅、状态查询和排障任务默认全程保持只读；
+除非明确请求修复，不会自动安装或写入配置。
+
+基础包策略默认为 `manual`。需要授权安装缺失的 UltraPlot 时，可使用
+`--package-policy install`，或设置 `ULTRAPLOT_FIGURES_AUTO_INSTALL_ULTRAPLOT=1`。需要授权
+升级时，可使用 `--package-policy upgrade --ultraplot-version 2.7.1`，或同时设置
+`ULTRAPLOT_FIGURES_AUTO_UPGRADE=1` 与 `ULTRAPLOT_FIGURES_ULTRAPLOT_VERSION`；
+`install-and-upgrade` 同时开启两者。引导流程会在选定解释器中以精确的稳定版 2.7.x
+安装 `ultraplot[mcp]`，不会降级。如果同时设置策略变量和布尔别名，以
+`ULTRAPLOT_FIGURES_PACKAGE_POLICY` 为准。如果基础包不存在且仍为 `manual`，结果为
+`base_install_required`，需要先安装基础包或明确启用策略。
 
 ### 3. UltraPlot MCP
 
-UltraPlot 2.7.0 及以上版本提供官方 MCP 服务，用于 API、文档、示例、发行说明和
-源码查询。首次使用时，本 skill 会检查当前绘图环境；如果 MCP 缺失或不匹配，Codex
-会先请求授权，再为同一环境配置用户级 MCP，之后可能需要新建任务或重启 Codex。
+自动引导支持从 2.7.0 开始的稳定 UltraPlot 2.7.x 系列，该系列提供官方 MCP 服务，
+用于 API、文档、示例、发行说明和源码查询。Codex 会在图件工作流中检查 MCP 是否可用；
+配置条目写入后，必须重新加载
+客户端才算可以调用。
 
-独立的版本检查至多每天检查一次 GitHub 上的最新稳定版，不会自动下载、安装或替换
-skill 文件。设置 `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` 可以关闭检查。
+当只读检查明确需要修复时，引导流程可以安装精确匹配当前版本的
+`ultraplot[mcp]==<当前版本>`，并在活动 TOML 结构安全时写入匹配的
+`mcp_servers.ultraplot` 条目。基础包安装和升级由上述策略单独控制，并要求精确稳定版目标。
+默认不会从 PyPI 替换 editable/development、远程、未知、conda 或混合来源；经过审查的
+conda/混合环境可使用 `--allow-pip-in-conda` 或
+`ULTRAPLOT_FIGURES_ALLOW_PIP_IN_CONDA=1` 明确授权。引导流程不会降级、克隆文档、覆盖冲突条目、
+修改无关设置或重启 Codex。自动引导只适用于已发布的稳定版 UltraPlot 2.7.x；更旧版本、未来主版本、
+预发布版、本地构建或来源无法核验的版本默认会转为人工处理。经过明确授权的精确目标升级，可将
+来源已核验的旧版 pip 安装迁移到受支持的 2.7.x。
+
+默认自动目标是活动用户配置 `$CODEX_HOME/config.toml`；未设置 `CODEX_HOME` 时使用
+`~/.codex/config.toml`。不会自动发现项目级 `.codex/config.toml`；如需使用项目配置，
+请在手动修复时显式传入 `--config`。选定的绘图解释器与 MCP server 命令必须属于同一
+环境。
+
+结果会区分本地就绪与实时可用：`configured` 表示依赖和条目在本地已对齐；
+`configured_without_docs` 表示 API/源码调用可能可用，但文档和发行说明搜索不可用；如果
+已有匹配且带版本标记的文档树，自动引导可以只补写文档路径。自动候选文档目录应类似
+`ultraplot-2.7.0/docs`，并同时包含 `conf.py` 和 `index.rst`；显式传入的路径仍需人工确认版本。
+`restart_required` 是 JSON 布尔字段，
+为 `true` 时必须重启客户端或新建任务后才能使用新条目。如果依赖安装成功但
+后续变更失败，结果可能带有 `partial: true`：pip 可能在报错前已经改动部分包，系统不会自动
+回滚；应按返回原因并结合当前环境处理。冲突、无效配置、权限错误、包安装失败或写后
+核验失败都不会自动使用 `--force`。设置
+`ULTRAPLOT_FIGURES_MCP_AUTO_SETUP=0` 可关闭自动变更；退出自动设置或 `unverified` 的
+发现状态均为只读，不会触发 pip 或配置写入。
+
+独立 skill 安装器只负责复制 skill 文件，不能执行进程级 SessionStart 钩子；因此检查发生
+在安装或更新后的首次调用，而不是安装命令返回的瞬间。独立的版本检查对同一已安装
+skill 版本通常至多每天检查一次。网络错误、元数据缺失或非稳定版元数据会 fail open；
+检查不会下载、安装或替换 skill 文件。
+
+设置 `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` 可以关闭上述版本检查。
 
 ## 交付物与使用限制
 
@@ -101,7 +154,7 @@ skill 文件。设置 `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` 可以关闭检查。
 
 - 简洁、可独立运行、便于继续修改的绘图代码；
 - 需要实质性数据处理时使用的预处理代码，以及绘图实际使用的最终处理结果；
-- 用户要求的最终图件；未指定格式时默认保留 PDF 和 PNG。
+- 用户要求的最终图件；出版导向的静态图未指定格式时，通常保留 PDF 和 PNG。
 
 Codex 在内部完成核验，不保留核验代码、独立核验说明、manifest、诊断图、日志、
 中间数据、排除记录表或其他仅用于检查的文件。重要假设和未解决问题在最终回复中概述。

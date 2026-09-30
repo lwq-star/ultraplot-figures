@@ -41,19 +41,22 @@ Output requirements: [optional dimensions, formats, or journal requirements]
 
 ### Defaults
 
-When no figure size is specified, the skill uses UltraPlot's `nat2` preset, which
-is 183 mm wide. It produces PDF and PNG unless another format is requested.
+For a new publication figure with no width guidance, the skill may use
+UltraPlot's `nat2` preset (183 mm wide). It produces publication-oriented PDF
+and PNG exports when no format is requested; honor the user's, journal's, or
+existing project's dimensions and formats when they are specified.
 
-If no journal or font is specified, UltraPlot defaults to 9 pt sans-serif TeX
-Gyre Heros. It is an open-source Helvetica-style font that remains clear at
-small figure sizes and is easy to reproduce across systems. It matches the
-sans-serif style commonly required by many journals. For example,
+Preserve the effective UltraPlot font configuration by default. When no font
+guidance exists, use an installed, reproducible font appropriate to the project
+or journal rather than imposing a new global font. Many journals prefer a
+clear sans-serif style; for example,
 [Nature requires sans-serif figure lettering and prefers Helvetica or Arial](https://www.nature.com/nature/for-authors/final-submission).
 
-For Chinese text, the skill retains TeX Gyre Heros as the primary Latin font and
-uses `Microsoft YaHei` (`微软雅黑`) as the default Chinese fallback. Microsoft
-YaHei is a sans-serif Chinese font that covers common Simplified Chinese glyphs
-and remains clear and legible at the small sizes used in scientific figures.
+For Chinese text, choose an installed local CJK fallback that matches the user,
+journal, or project. `Microsoft YaHei` (`微软雅黑`) is one possible example
+when it is already installed; the skill does not download or globally install
+fonts. Use a requested or established raster DPI, and do not force DPI settings
+on vector-only output.
 
 ### Example request
 
@@ -81,37 +84,109 @@ discovered it, start a new task and invoke `$ultraplot-figures` again.
 
 ### 2. Install UltraPlot
 
-Install with pip:
+Install UltraPlot into the interpreter that will run the plotting script. Use
+that same interpreter for the MCP server; do not rely on a bare `pip` from an
+unrelated environment:
 
 ```bash
-pip install ultraplot
+<python> -m pip install "ultraplot[mcp]==2.7.0"
 ```
+
+Use another exact stable 2.7.x target only when the project requires it; avoid
+an unbounded install that could select an unsupported future release.
 
 Or install it with conda:
 
 ```bash
-conda install -c conda-forge ultraplot
+conda install -n <environment> -c conda-forge ultraplot
 ```
+
+Replace `<python>` and `<environment>` with the interpreter/environment selected
+by the active host and project rules. On Windows PowerShell, an explicit
+interpreter is commonly invoked as `& 'D:\path\to\python.exe' -m pip ...`;
+on POSIX shells use `/path/to/python -m pip ...`.
 
 Install Cartopy separately for geographic projections. Other data-reading and
 processing libraries depend on the task. See the official
 [installation guide](https://ultraplot.readthedocs.io/en/stable/install.html) for
 details.
 
-Installing this skill does not install UltraPlot or its dependencies.
+Installing or updating this skill does not execute package setup. The first
+invocation after an install or update performs a read-only preflight in the
+selected plotting environment, then may run the safe, idempotent MCP bootstrap
+when its conditions are met. Normal figure tasks repeat the same preflight on
+later invocations; a persistent first-use marker is not assumed. Review-only,
+status, and troubleshooting tasks keep the whole flow read-only unless repair
+is explicitly requested.
+
+The base-package policy defaults to `manual`. To authorize a missing-package
+installation, use `--package-policy install` (or
+`ULTRAPLOT_FIGURES_AUTO_INSTALL_ULTRAPLOT=1`). To authorize an exact-target
+upgrade, use `--package-policy upgrade --ultraplot-version 2.7.1` (or set
+`ULTRAPLOT_FIGURES_AUTO_UPGRADE=1` together with
+`ULTRAPLOT_FIGURES_ULTRAPLOT_VERSION`). `install-and-upgrade` enables both.
+When both forms are set, `ULTRAPLOT_FIGURES_PACKAGE_POLICY` takes precedence
+over the boolean aliases.
+The helper installs `ultraplot[mcp]` at the requested stable 2.7.x version in
+the selected interpreter and never downgrades. If UltraPlot is missing and the
+policy remains `manual`, the result is `base_install_required` and a plotting
+task must stop until the package is installed or the policy is explicitly
+enabled.
 
 ### 3. UltraPlot MCP
 
-UltraPlot 2.7.0 and later provide an official MCP server for API, documentation,
-example, release-note, and source inspection. Codex handles MCP availability and
-use as part of the figure workflow.
+The supported automatic setup contract is the stable UltraPlot 2.7.x series
+starting at 2.7.0; it provides an official MCP server for API, documentation,
+example, release-note, and source inspection. Codex checks MCP availability as
+part of the figure workflow; a configured entry is not considered callable
+until the client has reloaded it.
 
-On first use, the skill checks the selected plotting environment. If MCP is
-missing or mismatched, Codex requests authorization before configuring the
-user-level MCP entry for that same environment; a new task or Codex restart may
-be required afterward. The separate release check runs at most once per local
-calendar day and never downloads, installs, or replaces skill files. Set
-`ULTRAPLOT_FIGURES_UPDATE_CHECK=0` to disable it.
+When an explicit check says repair is needed, the bootstrap can install
+`ultraplot[mcp]==<installed-version>` and, when the active TOML is safe to edit,
+write a matching `mcp_servers.ultraplot` entry. Base installation and upgrades
+are separately policy-controlled and use an exact stable target. Editable,
+remote, unknown, conda-managed, or mixed installations are not replaced from
+PyPI by default; a reviewed conda/mixed environment can be explicitly allowed
+with `--allow-pip-in-conda` or `ULTRAPLOT_FIGURES_ALLOW_PIP_IN_CONDA=1`. The
+bootstrap never downgrades, clones documentation, overwrites a conflicting
+entry, modifies unrelated settings, or restarts Codex. Automatic MCP setup
+applies only to the published stable UltraPlot 2.7.x series; older,
+future-major, prerelease, local-build, or unverifiable-source versions are
+reported for manual repair by default. An explicitly authorized exact-target
+upgrade may migrate an older verified pip installation to supported 2.7.x.
+
+The default automatic target is the active user configuration
+`$CODEX_HOME/config.toml`, or `~/.codex/config.toml` when `CODEX_HOME` is not
+set. A project-level `.codex/config.toml` is not discovered automatically;
+select it explicitly during a manual repair with `--config`. The selected
+interpreter and the server command must refer to the same environment.
+
+The result distinguishes local readiness from live availability. `configured`
+means the dependency and entry are locally aligned; `configured_without_docs`
+means API/source calls may work but documentation and release-note searches are
+not available. `restart_required` is a JSON boolean field; when it is `true`,
+the client must be restarted or a new task started before the entry can be used.
+When a matching documentation tree is already available, bootstrap may add
+only its documentation path to a `configured_without_docs` entry. Automatic
+documentation enrichment accepts only a version-marked checkout (for example,
+`ultraplot-2.7.0/docs` with both `conf.py` and `index.rst`); an explicitly
+supplied path still needs manual version confirmation. If the dependency install succeeds
+but a later mutation fails, the result may carry `partial: true`: pip can have
+changed packages before returning an error, and no package change is
+automatically rolled back. Review the reported reason and current environment.
+Conflicts, invalid configuration, permissions, package failures, and a failed
+post-write verification never use `--force` automatically. Set
+`ULTRAPLOT_FIGURES_MCP_AUTO_SETUP=0` to opt out;
+opted-out or `unverified` discovery is read-only and does not trigger pip or
+configuration writes.
+
+The standalone skill installer copies skill files and cannot run a process-level
+startup hook; therefore the check runs when the installed or updated skill is
+first invoked, not when the install command returns. The separate release
+check usually runs at most once per local calendar day for the same installed
+skill version. Network errors, missing metadata, and non-stable release
+metadata fail open; the check never downloads, installs, or replaces skill
+files. Set `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` to disable it.
 
 ## Deliverables and limits
 
@@ -120,7 +195,8 @@ When data or plotting source is available, Codex retains only, as needed:
 - concise, independently runnable, editable plotting code;
 - preprocessing code and only the final processed data used by the figure when
   substantive preprocessing is required;
-- the requested final figure files, defaulting to PDF and PNG when unspecified.
+- the requested final figure files; for publication-oriented static figures,
+  PDF and PNG are the usual defaults when no format is specified.
 
 Codex performs verification internally. It does not retain verification code,
 notes, manifests, diagnostic renders, logs, intermediate data, exclusion tables,

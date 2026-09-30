@@ -275,8 +275,11 @@ def _latest_release(*, automatic: bool) -> dict[str, Any] | None:
         raise UpdateCheckError("GitHub returned invalid release metadata.") from exc
     if not isinstance(release, dict):
         raise UpdateCheckError("GitHub returned invalid release metadata.")
+    # The endpoint normally returns the latest published stable release, but do
+    # not turn an unexpected non-stable response into a noisy failure.  Treat it
+    # as no actionable release and keep the automatic check fail-open.
     if release.get("draft") or release.get("prerelease"):
-        raise UpdateCheckError("GitHub returned a draft or prerelease.")
+        return None
 
     tag_name = release.get("tag_name")
     release_url = release.get("html_url")
