@@ -98,56 +98,6 @@ shell 中使用 `/path/to/python -m pip ...`。
 同一套预检，不依赖持久化的“首次使用”标记。仅审阅、状态查询和排障任务默认全程保持只读；
 除非明确请求修复，不会自动安装或写入配置。
 
-基础包策略默认为 `manual`。需要授权安装缺失的 UltraPlot 时，可使用
-`--package-policy install`，或设置 `ULTRAPLOT_FIGURES_AUTO_INSTALL_ULTRAPLOT=1`。需要授权
-升级时，可使用 `--package-policy upgrade --ultraplot-version 2.7.1`，或同时设置
-`ULTRAPLOT_FIGURES_AUTO_UPGRADE=1` 与 `ULTRAPLOT_FIGURES_ULTRAPLOT_VERSION`；
-`install-and-upgrade` 同时开启两者。引导流程会在选定解释器中以精确的稳定版 2.7.x
-安装 `ultraplot[mcp]`，不会降级。如果同时设置策略变量和布尔别名，以
-`ULTRAPLOT_FIGURES_PACKAGE_POLICY` 为准。如果基础包不存在且仍为 `manual`，结果为
-`base_install_required`，需要先安装基础包或明确启用策略。
-
-### 3. UltraPlot MCP
-
-自动引导支持从 2.7.0 开始的稳定 UltraPlot 2.7.x 系列，该系列提供官方 MCP 服务，
-用于 API、文档、示例、发行说明和源码查询。Codex 会在图件工作流中检查 MCP 是否可用；
-配置条目写入后，必须重新加载
-客户端才算可以调用。
-
-当只读检查明确需要修复时，引导流程可以安装精确匹配当前版本的
-`ultraplot[mcp]==<当前版本>`，并在活动 TOML 结构安全时写入匹配的
-`mcp_servers.ultraplot` 条目。基础包安装和升级由上述策略单独控制，并要求精确稳定版目标。
-默认不会从 PyPI 替换 editable/development、远程、未知、conda 或混合来源；经过审查的
-conda/混合环境可使用 `--allow-pip-in-conda` 或
-`ULTRAPLOT_FIGURES_ALLOW_PIP_IN_CONDA=1` 明确授权。引导流程不会降级、克隆文档、覆盖冲突条目、
-修改无关设置或重启 Codex。自动引导只适用于已发布的稳定版 UltraPlot 2.7.x；更旧版本、未来主版本、
-预发布版、本地构建或来源无法核验的版本默认会转为人工处理。经过明确授权的精确目标升级，可将
-来源已核验的旧版 pip 安装迁移到受支持的 2.7.x。
-
-默认自动目标是活动用户配置 `$CODEX_HOME/config.toml`；未设置 `CODEX_HOME` 时使用
-`~/.codex/config.toml`。不会自动发现项目级 `.codex/config.toml`；如需使用项目配置，
-请在手动修复时显式传入 `--config`。选定的绘图解释器与 MCP server 命令必须属于同一
-环境。
-
-结果会区分本地就绪与实时可用：`configured` 表示依赖和条目在本地已对齐；
-`configured_without_docs` 表示 API/源码调用可能可用，但文档和发行说明搜索不可用；如果
-已有匹配且带版本标记的文档树，自动引导可以只补写文档路径。自动候选文档目录应类似
-`ultraplot-2.7.0/docs`，并同时包含 `conf.py` 和 `index.rst`；显式传入的路径仍需人工确认版本。
-`restart_required` 是 JSON 布尔字段，
-为 `true` 时必须重启客户端或新建任务后才能使用新条目。如果依赖安装成功但
-后续变更失败，结果可能带有 `partial: true`：pip 可能在报错前已经改动部分包，系统不会自动
-回滚；应按返回原因并结合当前环境处理。冲突、无效配置、权限错误、包安装失败或写后
-核验失败都不会自动使用 `--force`。设置
-`ULTRAPLOT_FIGURES_MCP_AUTO_SETUP=0` 可关闭自动变更；退出自动设置或 `unverified` 的
-发现状态均为只读，不会触发 pip 或配置写入。
-
-独立 skill 安装器只负责复制 skill 文件，不能执行进程级 SessionStart 钩子；因此检查发生
-在安装或更新后的首次调用，而不是安装命令返回的瞬间。独立的版本检查对同一已安装
-skill 版本通常至多每天检查一次。网络错误、元数据缺失或非稳定版元数据会 fail open；
-检查不会下载、安装或替换 skill 文件。
-
-设置 `ULTRAPLOT_FIGURES_UPDATE_CHECK=0` 可以关闭上述版本检查。
-
 ## 交付物与使用限制
 
 有数据或绘图源文件时，Codex 只会根据任务需要保留：
